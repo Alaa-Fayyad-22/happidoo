@@ -1,0 +1,17 @@
+[
+  {
+    "productSlug": null,
+    "eventDate": "2001-02-11",
+    "timeWindow": "Morning",
+    "city": "beirut",
+    "address": "testing",
+    "name": "test",
+    "phone": "+9613748496",
+    "email": "test@gmail.com",
+    "notes": "testing paragraph",
+    "website": "",
+    "id": "08a9ee07-4968-4d0e-b18e-a0545ee3f2e2",
+    "createdAt": "2026-01-29T08:26:44.512Z",
+    "status": "new"
+  }
+]

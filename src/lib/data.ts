@@ -1,0 +1,36 @@
+import { Product } from "./types";
+
+export const PRODUCTS: Product[] = [
+  {
+    id: "p1",
+    slug: "rainbow-bouncy-castle",
+    name: "Rainbow Bouncy Castle",
+    category: "Bouncy Castles",
+    priceFrom: 120,
+    size: "4m x 4m",
+    ageRange: "3–10",
+    capacity: "Up to 8 kids",
+    description: "A colorful classic that fits most gardens and keeps kids busy for hours.",
+    includes: ["Delivery & setup", "Safety briefing", "Ground tarp"],
+    safetyRules: ["Adult supervision required", "No shoes inside", "Max capacity enforced"],
+    images: ["/images/products/placeholder.jpg"],
+    featured: true,
+    active: true,
+  },
+  {
+    id: "p2",
+    slug: "mega-water-slide",
+    name: "Mega Water Slide",
+    category: "Water Slides",
+    priceFrom: 220,
+    size: "8m x 3m",
+    ageRange: "5+",
+    capacity: "One slider at a time",
+    description: "Big splash energy for hot days and birthdays.",
+    includes: ["Delivery & setup", "Water hookup guidance"],
+    safetyRules: ["Clear landing zone", "No diving", "No rough play"],
+    images: ["/images/products/placeholder.jpg"],
+    featured: true,
+    active: true,
+  },
+];
