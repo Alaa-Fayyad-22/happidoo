@@ -10,8 +10,15 @@ type Lead = {
   id: string;
   createdAt: string;
   status: LeadStatus | string;
+
+  // backward compatible (old)
   productSlug: string | null;
   productName?: string | null;
+
+  // new (multi)
+  productSlugs?: string[] | null;
+  productNames?: string[] | null;
+
   eventDate: string;
   timeWindow: string;
   city: string;
@@ -43,6 +50,35 @@ function statusBadgeClass(status: string) {
       return "bg-slate-50 text-slate-700 border-slate-100";
   }
 }
+function leadProductsText(x: Lead) {
+  const names = Array.isArray(x.productNames) ? x.productNames.filter(Boolean) : [];
+  const slugs = Array.isArray(x.productSlugs) ? x.productSlugs.filter(Boolean) : [];
+
+  // Prefer names if present
+  if (names.length > 0) return names.join(", ");
+
+  // fallback to multi slugs
+  if (slugs.length > 0) return slugs.join(", ");
+
+  // fallback to old single fields
+  return x.productName || x.productSlug || "—";
+}
+
+function leadProductsBadges(x: Lead) {
+  const names = Array.isArray(x.productNames) ? x.productNames.filter(Boolean) : [];
+  const slugs = Array.isArray(x.productSlugs) ? x.productSlugs.filter(Boolean) : [];
+
+  const items =
+    names.length > 0
+      ? names
+      : slugs.length > 0
+      ? slugs
+      : [x.productName || x.productSlug || "—"];
+
+  return items;
+}
+
+
 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -216,11 +252,19 @@ export default function AdminLeadsPage() {
                         <td className="px-4 py-3">{x.city}</td>
 
                         <td className="px-4 py-3">
-                          <div className="font-semibold">{x.productName || x.productSlug || "—"}</div>
-                          {x.productName && x.productSlug ? (
-                            <div className="text-xs text-slate-500">{x.productSlug}</div>
-                          ) : null}
-                        </td>
+  <div className="flex flex-wrap gap-2">
+    {leadProductsBadges(x).map((label, idx) => (
+      <span
+        key={`${x.id}-p-${idx}`}
+        className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
+        title={label}
+      >
+        {label}
+      </span>
+    ))}
+  </div>
+</td>
+
 
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -284,9 +328,19 @@ export default function AdminLeadsPage() {
                         {x.city}
                       </div>
                       <div>
-                        <span className="text-slate-500">Product: </span>
-                        {x.productName || x.productSlug || "—"}
+                      <div className="text-slate-500 mb-1">Products</div>
+                      <div className="flex flex-wrap gap-2">
+                        {leadProductsBadges(x).map((label, idx) => (
+                          <span
+                            key={`${x.id}-mp-${idx}`}
+                            className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
+                          >
+                            {label}
+                          </span>
+                        ))}
                       </div>
+                    </div>
+
 
                       <div className="mt-2">
                         <div className="text-slate-500 mb-1">Status</div>

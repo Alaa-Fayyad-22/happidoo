@@ -6,7 +6,7 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="text-base font-bold text-slate-900">Inflatables</div>
+            <div className="text-base font-bold text-slate-900">Happidoo</div>
             <p className="mt-2 text-sm text-slate-700">
               Premium inflatables for birthdays, schools, and events. Delivery and setup included.
             </p>
@@ -17,6 +17,7 @@ export default function SiteFooter() {
             <div className="mt-2 grid gap-2 text-slate-700">
               <Link className="hover:text-slate-900" href="/catalog">Catalog</Link>
               <Link className="hover:text-slate-900" href="/gallery">Gallery</Link>
+              <Link className="hover:text-slate-900" href="/about">About Us</Link>
               <Link className="hover:text-slate-900" href="/faq">FAQ</Link>
               <Link className="hover:text-slate-900" href="/quote">Get a Quote</Link>
             </div>
@@ -42,13 +43,13 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <div>© {new Date().getFullYear()} Inflatables Rentals. All rights reserved.</div>
-          <div className="flex gap-3">
+        <div className="mt-10 flex flex-col items-center justify-center gap-2 border-t pt-6 text-center text-xs text-slate-500">
+          <div>© {new Date().getFullYear()} Happidoo. All rights reserved.</div>
+          {/* <div className="flex gap-3">
             <span>Built with Next.js</span>
             <span>•</span>
             <span>Mobile-first</span>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>
