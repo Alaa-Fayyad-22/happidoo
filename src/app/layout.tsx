@@ -5,12 +5,16 @@ import SiteFooter from "@/components/SiteFooter";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
+  // <meta name="google-site-verification" content="GjFGs0_kz2ar_60uUIaatcH-Dw3qeETrU4Z6UCOfhoE" />
+  verification: {
+    google: "GjFGs0_kz2ar_60uUIaatcH-Dw3qeETrU4Z6UCOfhoE",
+  },
   title: {
     default: "Inflatables Rentals",
     template: "%s • Inflatables Rentals",
   },
   description: "Inflatables rentals for birthdays and events. Delivery and setup included.",
-  metadataBase: new URL("https://happidoo.vercel.app/"),
+  metadataBase: new URL("https://happidoo.vercel.app"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
