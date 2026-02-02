@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s • Inflatables Rentals",
   },
   description: "Inflatables rentals for birthdays and events. Delivery and setup included.",
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("https://happidoo.vercel.app/"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <div className="min-h-[calc(100vh-80px)]">{children}</div>
         <SiteFooter />
+
+        {/* Vercel Web Analytics */}
+        <Analytics />
       </body>
     </html>
   );
