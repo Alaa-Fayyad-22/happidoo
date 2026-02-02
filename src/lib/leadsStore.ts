@@ -1,12 +1,35 @@
 import { prisma } from "@/lib/prisma";
 import type { QuoteInput } from "@/lib/validators";
 
+function normalizeSlugs(xs: unknown): string[] {
+  if (!Array.isArray(xs)) return [];
+  const cleaned = xs
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  return Array.from(new Set(cleaned));
+}
+
 export async function addLead(input: QuoteInput) {
   const notes = (input.notes ?? "").trim();
 
+  const single = (input.productSlug ?? "").trim();
+
+  // New: productSlugs array (multi-select)
+  const array = normalizeSlugs((input as any).productSlugs);
+
+  // Merge logic:
+  // - if array exists, use it
+  // - else fall back to old single slug
+  const merged = array.length > 0 ? array : single ? [single] : [];
+
   const lead = await prisma.lead.create({
     data: {
-      productSlug: input.productSlug && input.productSlug.trim() ? input.productSlug.trim() : null,
+      // Backward compatible: keep productSlug as the first item
+      productSlug: merged[0] ?? null,
+
+      // New: store full list (requires Prisma schema update)
+      productSlugs: merged,
+
       eventDate: input.eventDate,
       timeWindow: input.timeWindow,
       city: input.city,
@@ -20,7 +43,6 @@ export async function addLead(input: QuoteInput) {
 
   return lead;
 }
-
 
 export async function listLeads() {
   return prisma.lead.findMany({
@@ -46,4 +68,3 @@ export async function updateLead(
 
   return updated;
 }
-

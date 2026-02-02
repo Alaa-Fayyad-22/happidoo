@@ -2,6 +2,20 @@
 import { prisma } from "@/lib/prisma";
 import QuoteFormClient from "./quoteFormClient";
 
+function parseSelectedProducts(sp: Record<string, any>): string[] {
+  const raw = sp?.product;
+  const values: string[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
+  return Array.from(
+    new Set(
+      values
+        .flatMap((v) => String(v).split(",")) // allow comma-separated too
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 export default async function QuotePage({
   searchParams,
 }: {
@@ -14,20 +28,21 @@ export default async function QuotePage({
       ? await (searchParams as Promise<Record<string, any>>)
       : (searchParams as Record<string, any>);
 
-  const raw = sp?.product;
-  const slug = Array.isArray(raw) ? raw[0] : raw;
-  const productSlug = (slug || "").trim();
+  const requestedSlugs = parseSelectedProducts(sp);
 
-  let confirmedSlug: string | null = null;
-  let productName: string | null = null;
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    select: { slug: true, name: true },
+  });
 
-  if (productSlug) {
-    const p = await prisma.product.findUnique({ where: { slug: productSlug } });
-    if (p && p.isActive) {
-      confirmedSlug = p.slug;
-      productName = p.name;
-    }
-  }
+  const active = new Set(products.map((p) => p.slug));
+  const initialSelectedSlugs = requestedSlugs.filter((s) => active.has(s));
 
-  return <QuoteFormClient productSlug={confirmedSlug} productName={productName} />;
+  return (
+    <QuoteFormClient
+      products={products}
+      initialSelectedSlugs={initialSelectedSlugs}
+    />
+  );
 }

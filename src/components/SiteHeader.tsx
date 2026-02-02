@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Logo from "@/components/Logo";
+
 
 const NAV = [
   { href: "/catalog", label: "Catalog" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/about", label: "About Us" },
   { href: "/faq", label: "FAQ" },
 ];
 
@@ -36,12 +39,11 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-slate-900 text-white">
-            I
-          </div>
+          <Logo size={36} />
+
           <div className="leading-tight">
             <div className="text-sm font-bold tracking-tight text-slate-900">
-              Inflatables
+                Happidoo
             </div>
             <div className="text-xs text-slate-600">Delivery • Setup • Safety</div>
           </div>
@@ -50,7 +52,8 @@ export default function SiteHeader() {
         {/* Desktop nav */}
         <nav className="hidden items-center gap-5 md:flex">
           {NAV.map((item) => {
-            const active = pathname?.startsWith(item.href);
+            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+
             return (
               <Link
                 key={item.href}
@@ -99,7 +102,8 @@ export default function SiteHeader() {
           <div className="mx-auto max-w-6xl px-4 py-3">
             <div className="grid gap-2">
               {NAV.map((item) => {
-                const active = pathname?.startsWith(item.href);
+                const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+
                 return (
                   <Link
                     key={item.href}

@@ -15,7 +15,9 @@ model Lead {
   createdAt  DateTime @default(now())
   status     String   @default("new")
 
-  productSlug String?
+  productSlug  String?
+  productSlugs String[] @default([])
+
   eventDate   String
   timeWindow  String
   city        String
@@ -25,6 +27,7 @@ model Lead {
   email       String
   notes       String   @default("")
 }
+
 
 model Product {
   id          String   @id @default(uuid())

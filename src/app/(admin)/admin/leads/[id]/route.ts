@@ -9,6 +9,36 @@ function isAllowedStatus(x: unknown): x is LeadStatus {
   return typeof x === "string" && (AllowedStatus as readonly string[]).includes(x);
 }
 
+async function enrichLead(lead: any) {
+  // normalize slugs
+  const slugs: string[] =
+    Array.isArray(lead.productSlugs) && lead.productSlugs.length > 0
+      ? lead.productSlugs
+      : lead.productSlug
+      ? [lead.productSlug]
+      : [];
+
+  // fetch names
+  const products = slugs.length
+    ? await prisma.product.findMany({
+        where: { slug: { in: slugs } },
+        select: { slug: true, name: true },
+      })
+    : [];
+
+  const nameBySlug = new Map(products.map((p) => [p.slug, p.name]));
+  const names = slugs.map((s) => nameBySlug.get(s) ?? s);
+
+  return {
+    ...lead,
+    productSlugs: slugs,
+    productNames: names,
+    // backward compatible
+    productSlug: slugs[0] ?? null,
+    productName: names[0] ?? null,
+  };
+}
+
 export async function PATCH(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> | { id: string } }
@@ -34,20 +64,13 @@ export async function PATCH(
   const notes = raw?.notes;
 
   if (status !== undefined && !isAllowedStatus(status)) {
-    return NextResponse.json(
-      { ok: false, message: "Invalid status." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, message: "Invalid status." }, { status: 400 });
   }
 
   if (notes !== undefined && typeof notes !== "string") {
-    return NextResponse.json(
-      { ok: false, message: "Invalid notes." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, message: "Invalid notes." }, { status: 400 });
   }
 
-  // Nothing to update
   if (status === undefined && notes === undefined) {
     return NextResponse.json({ ok: false, message: "No fields to update." }, { status: 400 });
   }
@@ -60,5 +83,7 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json({ ok: true, lead }, { status: 200 });
+  const enriched = await enrichLead(lead);
+
+  return NextResponse.json({ ok: true, lead: enriched }, { status: 200 });
 }
