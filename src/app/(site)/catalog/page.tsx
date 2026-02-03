@@ -3,6 +3,10 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
 
 type SignedUrlResp = { url: string };
@@ -25,7 +29,7 @@ async function signProductImage(imagePath: string): Promise<string | null> {
   try {
     const res = await fetch(`${base}/api/image/product?path=${encodeURIComponent(path)}`, {
       method: "GET",
-      cache: "no-store",
+      next: { revalidate: 60 * 9 },
     });
     if (!res.ok) return null;
     const data = (await res.json()) as SignedUrlResp;
@@ -34,6 +38,7 @@ async function signProductImage(imagePath: string): Promise<string | null> {
     return null;
   }
 }
+
 
 export default async function CatalogPage() {
   const products = await prisma.product.findMany({

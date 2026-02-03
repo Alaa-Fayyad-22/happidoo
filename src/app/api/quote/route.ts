@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { QuoteSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rateLimit";
 import { addLead } from "@/lib/leadsStore";
+import { sendGmail } from "@/lib/gmailSender";
 
 export async function POST(req: NextRequest) {
   const ip =
@@ -41,6 +42,49 @@ export async function POST(req: NextRequest) {
 
   const lead = await addLead(body);
 
+  if (lead.email && lead.email.trim()) {
+  await sendGmail({
+    to: lead.email.trim(),
+    subject: `We received your quote #${lead.quoteNo}`,
+    text:
+      `✅ Quote received!\n\n` +
+      `Quote #: ${lead.quoteNo}\n` +
+      `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+      `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
+      `We’ll contact you soon.`,
+  });
+}
 
-  return NextResponse.json({ ok: true, message: "Received", leadId: lead.id }, { status: 200 });
+
+  return NextResponse.json(
+  {
+    ok: true,
+    message: "Received",
+
+    // IDs
+    leadId: lead.id,          // UUID (internal)
+    quoteNo: lead.quoteNo,    // integer (if you added it)
+
+    // server-generated
+    createdAt: lead.createdAt,
+
+    // event details
+    eventDate: lead.eventDate,
+    timeWindow: lead.timeWindow,
+
+    // products
+    productSlug: lead.productSlug,
+    productSlugs: lead.productSlugs,
+
+    // optional echo (safe for same-user response)
+    name: lead.name,
+    phone: lead.phone,
+    email: lead.email,
+    city: lead.city,
+    address: lead.address,
+    notes: lead.notes,
+    status: lead.status,
+  },
+  { status: 200 }
+);
 }
