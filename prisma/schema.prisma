@@ -12,6 +12,7 @@ datasource db {
 
 model Lead {
   id         String   @id @default(uuid())
+  quoteNo     Int      @unique @default(autoincrement())
   createdAt  DateTime @default(now())
   status     String   @default("new")
 

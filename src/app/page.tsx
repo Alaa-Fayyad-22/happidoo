@@ -1,5 +1,40 @@
 // src/app/(site)/page.tsx
 import Link from "next/link";
+import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
+
+
+type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
+type SignedUrlResp = { url: string };
+
+async function getBaseUrlFromHeaders() {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return null;
+  return `${proto}://${host}`;
+}
+
+async function signProductImage(imagePath: string): Promise<string | null> {
+  const path = (imagePath || "").trim();
+  if (!path) return null;
+
+  const base = await getBaseUrlFromHeaders();
+  if (!base) return null;
+
+  try {
+    const res = await fetch(`${base}/api/image/product?path=${encodeURIComponent(path)}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as SignedUrlResp;
+    return data?.url || null;
+  } catch {
+    return null;
+  }
+}
+
 
 function StatPill({ label }: { label: string }) {
   return (
@@ -102,6 +137,69 @@ function StepCard({
   );
 }
 
+function FeaturedProductCard({
+  p,
+}: {
+  p: {
+    id: string;
+    slug: string;
+    name: string;
+    category: string | null;
+    size: string | null;
+    priceFrom: number | null;
+    signedImageUrl: string | null;
+    description: string | null;
+  };
+}) {
+  return (
+    <Link
+      href={`/product/${p.slug}`}
+      className="group overflow-hidden rounded-3xl border border-black/10 bg-white/70 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      {/* Image */}
+      <div className="relative h-44 bg-white/50">
+        {p.signedImageUrl ? (
+          <img
+            src={p.signedImageUrl}
+            alt={p.name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-slate-400">
+            No image
+          </div>
+        )}
+
+        <div className="absolute left-3 top-3">
+          <span className="inline-flex items-center rounded-full border bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
+            {p.category || "general"}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="truncate text-lg font-semibold text-slate-900">{p.name}</div>
+            <div className="mt-1 text-sm text-slate-600 truncate">
+              {p.size ? `Size: ${p.size}` : "Size: —"}
+            </div>
+          </div>
+
+          <div className="shrink-0 rounded-2xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+            {p.priceFrom == null ? "Quote" : `From $${p.priceFrom}`}
+          </div>
+        </div>
+
+        <p className="mt-3 line-clamp-2 text-sm text-slate-600">
+          {p.description || "Tap to view details and request a quote."}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+
 function ProductSkeletonCard({ title }: { title: string }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-black/10 bg-white/70 shadow-sm backdrop-blur">
@@ -165,7 +263,25 @@ function InfoCard({
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    take: 3,
+  });
+
+  const featured = await Promise.all(
+    products.map(async (p: ProductRow) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      category: p.category,
+      size: p.size,
+      priceFrom: p.priceFrom,
+      description: p.description,
+      signedImageUrl: p.imagePath ? await signProductImage(p.imagePath) : null,
+    }))
+  );
   return (
     <main className="relative overflow-hidden">
       {/* Decorative blobs (page-level) */}
@@ -283,15 +399,21 @@ export default function Home() {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900">Popular rentals</h2>
             <p className="mt-1 text-slate-600">
-              These will be pulled from your Products table later (with images from Postgres).
+              Popular picks right now — delivery, setup, and pickup included.
             </p>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <ProductSkeletonCard title="Birthday Bounce House" />
-            <ProductSkeletonCard title="Giant Slide" />
-            <ProductSkeletonCard title="Obstacle Course" />
-          </div>
+          {featured.length === 0 ? (
+            <div className="rounded-3xl border bg-white p-6 text-slate-600">
+              No products available right now.
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((p) => (
+                <FeaturedProductCard key={p.id} p={p} />
+              ))}
+            </div>
+          )}
 
           <div className="mt-7 flex justify-center">
             <Link

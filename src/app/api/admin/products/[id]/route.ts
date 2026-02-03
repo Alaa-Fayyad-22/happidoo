@@ -1,6 +1,8 @@
 // src/app/api/admin/products/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag, revalidatePath } from "next/cache";
+
 
 function jsonError(message: string, status = 400, extra?: Record<string, unknown>) {
   return NextResponse.json({ error: message, ...(extra ?? {}) }, { status });
@@ -110,6 +112,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
   }
 
   const updated = await prisma.product.update({ where: { id }, data });
+
+  revalidateTag("product-signed-url", "max");
+
+// Optional but nice: if you ever cache the pages, this forces refresh
+  revalidatePath("/");
+  revalidatePath("/catalog");
+
   return NextResponse.json({ product: updated });
 }
 
@@ -121,5 +130,8 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   if (!existing) return jsonError("Product not found", 404);
 
   await prisma.product.delete({ where: { id } });
+  revalidateTag("product-signed-url", "max");
+  revalidatePath("/");
+  revalidatePath("/catalog");
   return NextResponse.json({ ok: true });
 }

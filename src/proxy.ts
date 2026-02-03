@@ -12,6 +12,17 @@ function isAdminEmail(email: string | null | undefined) {
 
 export default async function proxy(req: NextRequest) {
   const res = NextResponse.next();
+  const pathname = req.nextUrl.pathname;
+
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminApi = pathname.startsWith("/api/admin");
+  const isLoginPage = pathname.startsWith("/admin/login");
+
+  // Only guard admin pages + admin APIs
+  if (!isAdminRoute && !isAdminApi) return res;
+
+  // Allow login page to load
+  if (isLoginPage) return res;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,26 +40,29 @@ export default async function proxy(req: NextRequest) {
   );
 
   const { data } = await supabase.auth.getUser();
-  const email = data.user?.email;
+  const user = data?.user;
 
-  const pathname = req.nextUrl.pathname;
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isAdminApi = pathname.startsWith("/api/admin");
-  const isLoginPage = pathname.startsWith("/admin/login");
-
-  if (isAdminRoute || isAdminApi) {
-    if (isLoginPage) return res;
-
-    if (!data.user) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/admin/login";
-      url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+  // Not logged in
+  if (!user) {
+    if (isAdminApi) {
+      // IMPORTANT: return JSON (do not redirect to HTML)
+      return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
 
-    if (!isAdminEmail(email)) {
+  // Logged in, but not allowed admin email
+  if (!isAdminEmail(user.email)) {
+    if (isAdminApi) {
       return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
     }
+    // For pages, redirect away (or you could show a 403 page)
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 
   return res;

@@ -30,8 +30,8 @@ export default function AboutPage() {
           <div className="mt-6">
             <Link
               href="/catalog"
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
-            >
+              className="inline-flex items-center justify-center rounded-2xl bg-pink-500 px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+ >
               Browse inflatables
             </Link>
           </div>

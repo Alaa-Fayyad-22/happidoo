@@ -1,7 +1,7 @@
 // src/app/(site)/quote/quoteFormClient.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ProductOption = { slug: string; name: string };
 
@@ -19,10 +19,40 @@ type QuotePayload = {
   city: string;
   address: string;
   name: string;
-  phone: string;
+
+  phoneCountry: string; // e.g. "LB"
+  phoneCode: string; // e.g. "+961"
+  phone: string; // raw user input (we will convert to E.164 before POST)
   email: string;
+
   notes: string;
   website: string; // honeypot
+};
+
+type QuoteResponse = {
+  ok: true;
+  message: string;
+  leadId: string;
+  quoteNo: number;
+  createdAt: string;
+  eventDate: string;
+  timeWindow: string;
+  productSlug: string | null;
+  productSlugs: string[];
+  name: string;
+  phone: string;
+  email: string;
+  city: string;
+  address: string;
+  notes: string;
+  status: string;
+};
+
+type Country = {
+  iso2: string;
+  name: string;
+  code: string; // calling code like "+1"
+  flag: string;
 };
 
 function todayYmd() {
@@ -33,7 +63,56 @@ function todayYmd() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-async function postQuote(payload: QuotePayload) {
+function digitsOnly(s: string) {
+  return (s || "").replace(/[^\d]/g, "");
+}
+
+function buildE164(phoneCode: string, rawPhone: string) {
+  const codeDigits = digitsOnly(phoneCode);
+  const phoneDigits = digitsOnly(rawPhone);
+  if (!codeDigits || !phoneDigits) return null;
+  return `+${codeDigits}${phoneDigits}`;
+}
+
+function whatsappUrl(e164: string, text: string) {
+  const waPhone = digitsOnly(e164);
+  return `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
+}
+
+async function fetchCountries(): Promise<Country[]> {
+  const res = await fetch(
+    "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flag",
+    { cache: "force-cache" }
+  );
+  const data = await res.json();
+
+  const out: Country[] = [];
+  for (const c of Array.isArray(data) ? data : []) {
+    const iso2 = String(c?.cca2 ?? "").trim();
+    const name = String(c?.name?.common ?? "").trim();
+    const flag = String(c?.flag ?? "").trim();
+
+    const root = String(c?.idd?.root ?? "").trim(); // e.g. "+1"
+    const suffixes = Array.isArray(c?.idd?.suffixes) ? c.idd.suffixes : [];
+
+    if (!iso2 || !name || !root) continue;
+
+    // If multiple suffixes exist, pick the first to keep UI simple.
+    // (You can later improve to choose the shortest/most common per country.)
+    const suffix = suffixes.length > 0 ? String(suffixes[0] ?? "") : "";
+    const code = `${root}${suffix}`.trim();
+
+    // Must contain digits to be useful
+    if (!digitsOnly(code)) continue;
+
+    out.push({ iso2, name, code, flag });
+  }
+
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+async function postQuote(payload: QuotePayload): Promise<QuoteResponse> {
   const res = await fetch("/api/quote", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -53,15 +132,20 @@ async function postQuote(payload: QuotePayload) {
     throw new Error(msg);
   }
 
-  return data;
+  return data as QuoteResponse;
 }
 
 export default function QuoteFormClient({ products, initialSelectedSlugs }: Props) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [doneQuoteNo, setDoneQuoteNo] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   const today = useMemo(() => todayYmd(), []);
+
+  // Countries
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
 
   const [form, setForm] = useState<QuotePayload>(() => {
     const initial = initialSelectedSlugs ?? [];
@@ -74,12 +158,57 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       city: "",
       address: "",
       name: "",
+
+      // Will be overwritten after countries load (defaults keep UI usable instantly)
+      phoneCountry: "LB",
+      phoneCode: "+961",
       phone: "",
       email: "",
+
       notes: "",
       website: "",
     };
   });
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const list = await fetchCountries();
+        if (!alive) return;
+        setCountries(list);
+
+        // If current selection isn't present, or if you want a better default,
+        // try to infer from browser locale (e.g. "en-US" -> "US")
+        const locale = (typeof navigator !== "undefined" ? navigator.language : "") || "";
+        const guessIso2 = locale.split("-")[1]?.toUpperCase() || "";
+
+        const fallback =
+          list.find((c) => c.iso2 === guessIso2) ||
+          list.find((c) => c.iso2 === form.phoneCountry) ||
+          list.find((c) => c.iso2 === "LB") ||
+          list[0];
+
+        if (fallback) {
+          setForm((p) => ({
+            ...p,
+            phoneCountry: fallback.iso2,
+            phoneCode: fallback.code,
+          }));
+        }
+      } catch {
+        // keep defaults
+      } finally {
+        if (alive) setCountriesLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedProducts = useMemo(() => {
     const map = new Map(products.map((p) => [p.slug, p.name]));
@@ -105,13 +234,45 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
         throw new Error("Please provide at least a phone number or an email address.");
       }
 
+      // Convert to E.164 before POST (so DB stores a universal format)
+      const phoneE164 = form.phone.trim()
+        ? buildE164(form.phoneCode, form.phone)
+        : "";
+
+      if (form.phone.trim() && !phoneE164) {
+        throw new Error("Phone number looks invalid. Please choose country code and enter digits.");
+      }
+
       const payload: QuotePayload = {
         ...form,
+        phone: phoneE164 || "",
         productSlug: form.productSlugs[0] ?? null, // keep old in sync
       };
 
-      await postQuote(payload);
+      const result = await postQuote(payload);
+
       setDone(true);
+      setDoneQuoteNo(result.quoteNo ?? null);
+
+      // WhatsApp confirmation to the user's number (click-to-chat)
+      if (result.phone) {
+        const productsText =
+          selectedProducts.length > 0
+            ? selectedProducts.map((p) => p.name).join(", ")
+            : (result.productSlugs || []).join(", ");
+
+        const createdLocal = new Date(result.createdAt).toLocaleString();
+
+        const msg =
+          `✅ Quote received!\n\n` +
+          `Quote #: ${result.quoteNo}\n` +
+          `Created: ${createdLocal}\n` +
+          `Event: ${result.eventDate} (${result.timeWindow})\n` +
+          `Products: ${productsText}\n\n` +
+          `We’ll contact you soon. Please keep this quote number for reference.`;
+
+        window.location.href = whatsappUrl(result.phone, msg);
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to submit quote");
     } finally {
@@ -119,11 +280,15 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
     }
   }
 
+  const previewE164 = useMemo(() => {
+    if (!form.phone.trim()) return "";
+    const e164 = buildE164(form.phoneCode, form.phone);
+    return e164 || "";
+  }, [form.phone, form.phoneCode]);
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 md:px-8">
       <div className="rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-black/10 p-6 md:p-8">
-
-
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-xs font-semibold text-slate-800 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-green-500" />
@@ -169,6 +334,13 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
             <div className="text-xl font-bold">Quote submitted ✅</div>
             <div className="mt-2 text-slate-600">
               We received your request and will contact you soon.
+              {doneQuoteNo != null && (
+                <>
+                  {" "}
+                  Your quote number is{" "}
+                  <span className="font-semibold text-slate-900">{doneQuoteNo}</span>.
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -219,18 +391,58 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
                 />
               </Field>
 
-              <Field label="Phone">
-                <input
-                  value={form.phone}
-                  onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="w-full rounded-2xl border px-4 py-3 focus:ring-2 focus:ring-slate-200 outline-none"
-                  placeholder="+961..."
-                  disabled={busy}
-                />
-              </Field>
-
               <div className="sm:col-span-2">
-                <p className="text-xs text-slate-500">
+                <Field label="Phone">
+                  <div className="flex gap-2">
+                    <select
+                      value={form.phoneCountry}
+                      disabled={busy || countriesLoading || countries.length === 0}
+                      onChange={(e) => {
+                        const iso2 = e.target.value;
+                        const c = countries.find((x) => x.iso2 === iso2);
+                        if (!c) return;
+                        setForm((p) => ({
+                          ...p,
+                          phoneCountry: c.iso2,
+                          phoneCode: c.code,
+                        }));
+                      }}
+                      className="w-[58%] rounded-2xl border px-3 py-3 text-sm focus:ring-2 focus:ring-slate-200 outline-none"
+                      aria-label="Country calling code"
+                    >
+                      {countriesLoading ? (
+                        <option>Loading countries…</option>
+                      ) : countries.length === 0 ? (
+                        <option>Countries unavailable</option>
+                      ) : (
+                        countries.map((c) => (
+                          <option key={c.iso2} value={c.iso2}>
+                            {c.flag ? `${c.flag} ` : ""}
+                            {c.name} ({c.code})
+                          </option>
+                        ))
+                      )}
+                    </select>
+
+                    <input
+                      value={form.phone}
+                      onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                      className="w-full rounded-2xl border px-4 py-3 focus:ring-2 focus:ring-slate-200 outline-none"
+                      placeholder="Phone number"
+                      disabled={busy}
+                      inputMode="tel"
+                    />
+                  </div>
+
+                  {previewE164 && (
+                    <div className="mt-1 text-xs text-slate-500">
+                      WhatsApp will use:{" "}
+                      <span className="font-semibold text-slate-700">{previewE164}</span>
+                    </div>
+                  )}
+                </Field>
+
+                <p className="mt-1 text-xs text-slate-500">
                   Please provide at least a phone number or an email address.
                 </p>
               </div>

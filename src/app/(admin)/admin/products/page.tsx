@@ -296,28 +296,28 @@ export default function AdminProductsPage() {
     }
   }
 
-  async function moveIndex(fromIdx: number, toIdx: number) {
-    if (toIdx < 0 || toIdx >= sortedProducts.length) return;
+  // async function moveIndex(fromIdx: number, toIdx: number) {
+  //   if (toIdx < 0 || toIdx >= sortedProducts.length) return;
 
-    const next = [...sortedProducts];
-    const [item] = next.splice(fromIdx, 1);
-    next.splice(toIdx, 0, item);
+  //   const next = [...sortedProducts];
+  //   const [item] = next.splice(fromIdx, 1);
+  //   next.splice(toIdx, 0, item);
 
-    // Call reorder endpoint with ordered IDs
-    setBusy(true);
-    setError("");
-    try {
-      await fetchJSON("/api/admin/products/reorder", {
-        method: "POST",
-        body: JSON.stringify({ orderedIds: next.map((x) => x.id) }),
-      });
-      await loadProducts();
-    } catch (e: any) {
-      setError(e?.message || "Reorder failed");
-    } finally {
-      setBusy(false);
-    }
-  }
+  //   // Call reorder endpoint with ordered IDs
+  //   setBusy(true);
+  //   setError("");
+  //   try {
+  //     await fetchJSON("/api/admin/products/reorder", {
+  //       method: "POST",
+  //       body: JSON.stringify({ orderedIds: next.map((x) => x.id) }),
+  //     });
+  //     await loadProducts();
+  //   } catch (e: any) {
+  //     setError(e?.message || "Reorder failed");
+  //   } finally {
+  //     setBusy(false);
+  //   }
+  // }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
@@ -400,7 +400,7 @@ export default function AdminProductsPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
+                    {/* <button
                       className="px-2 py-1 rounded-md border text-sm disabled:opacity-50"
                       onClick={() => moveIndex(idx, idx - 1)}
                       disabled={busy || idx === 0}
@@ -415,7 +415,7 @@ export default function AdminProductsPage() {
                       title="Move down"
                     >
                       ↓
-                    </button>
+                    </button> */}
 
                     <button
                       className="px-3 py-1 rounded-md border text-sm disabled:opacity-50"
