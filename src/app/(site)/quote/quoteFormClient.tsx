@@ -3,7 +3,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type ProductOption = { slug: string; name: string };
+
+type ProductOption = {
+  slug: string;
+  name: string;
+  imagePath?: string | null; // storage key in bucket
+};
+
 
 type Props = {
   products: ProductOption[];
@@ -551,12 +557,13 @@ function ProductPicker({
   onChange,
   disabled,
 }: {
-  products: { slug: string; name: string }[];
+  products: { slug: string; name: string; imagePath?: string | null }[];
   value: string[];
   onChange: (next: string[]) => void;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [signed, setSigned] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
 
   const selectedSet = useMemo(() => new Set(value), [value]);
@@ -566,6 +573,48 @@ function ProductPicker({
     if (!query) return products;
     return products.filter((p) => `${p.name} ${p.slug}`.toLowerCase().includes(query));
   }, [products, q]);
+
+  useEffect(() => {
+  let alive = true;
+
+  (async () => {
+    const need = products.filter((p) => p.imagePath && !signed[p.slug]);
+    if (need.length === 0) return;
+
+    const entries = await Promise.all(
+      need.map(async (p) => {
+        try {
+          const res = await fetch(
+            `/api/image/product?path=${encodeURIComponent(p.imagePath!)}`,
+            { cache: "no-store" }
+          );
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data?.ok || !data?.url) return [p.slug, ""] as const;
+          return [p.slug, String(data.url)] as const;
+        } catch {
+          return [p.slug, ""] as const;
+        }
+      })
+    );
+
+    if (!alive) return;
+
+    setSigned((prev) => {
+      const next = { ...prev };
+      for (const [slug, url] of entries) {
+        if (url) next[slug] = url;
+      }
+      return next;
+    });
+  })();
+
+  return () => {
+    alive = false;
+  };
+  // IMPORTANT: only depend on products, not signed (avoid loop)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [products]);
+
 
   function toggle(slug: string) {
     const next = new Set(selectedSet);
@@ -689,7 +738,9 @@ function ProductPicker({
                   <ul className="divide-y">
                     {filtered.map((p) => {
                       const checked = selectedSet.has(p.slug);
+
                       return (
+                        
                         <li key={p.slug} className="px-4 py-3">
                           <label className="flex cursor-pointer items-center gap-3">
                             <input
@@ -698,6 +749,27 @@ function ProductPicker({
                               onChange={() => toggle(p.slug)}
                               className="h-4 w-4"
                             />
+                            <div className="h-28 w-28 overflow-hidden rounded-xl border bg-slate-50 shrink-0">
+                              {p.imagePath ? (
+                              signed[p.slug] ? (
+                                <img
+                                  src={signed[p.slug]}
+                                  alt={p.name}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div className="h-full w-full grid place-items-center text-[10px] text-slate-400">
+                                  Loading…
+                                </div>
+                              )
+                            ) : (
+                                <div className="h-full w-full grid place-items-center text-[10px] text-slate-400">
+                                  No image
+                                </div>
+                              )}
+                            </div>
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-slate-900">
                                 {p.name}

@@ -3,6 +3,7 @@ import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Analytics } from "@vercel/analytics/next";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export const metadata: Metadata = {
   // <meta name="google-site-verification" content="GjFGs0_kz2ar_60uUIaatcH-Dw3qeETrU4Z6UCOfhoE" />
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <div className="min-h-[calc(100vh-80px)]">{children}</div>
         <SiteFooter />
+        <WhatsAppButton />
 
         {/* Vercel Web Analytics */}
         <Analytics />
