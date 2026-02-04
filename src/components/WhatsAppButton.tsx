@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { FaWhatsapp } from "react-icons/fa";
 
-const PHONE_NUMBER = "9613748496"; 
+const PHONE_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "96171319079").replace(/[^\d]/g, "");
 
 const MESSAGE = encodeURIComponent(
-  "Hi! I’d like more information, please."
+  "Hi! I’m interested in inflatable game rentals from Happidoo.\nPlease let me know availability and pricing. Thank you!"
 );
 
 export default function WhatsAppButton() {

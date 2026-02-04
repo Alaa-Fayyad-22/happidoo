@@ -88,6 +88,27 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Send WhatsApp confirmation (best-effort)
+  // if (lead.phone) {
+  //   try {
+  //     const productsText = (lead.productSlugs || []).length
+  //       ? (lead.productSlugs || []).join(", ")
+  //       : lead.productSlug || "";
+
+  //     const msg =
+  //       `✅ Quote received!\n\n` +
+  //       `Quote #: ${lead.quoteNo}\n` +
+  //       `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+  //       `Products: ${productsText}\n\n` +
+  //       `We’ll contact you soon.`;
+
+  //     await sendWhatsApp(lead.phone, msg);
+  //   } catch (err) {
+  //     // don't fail the request if WhatsApp send fails
+  //     console.error("Failed to send WhatsApp confirmation:", err);
+  //   }
+  // }
+
 
   return NextResponse.json(
   {
