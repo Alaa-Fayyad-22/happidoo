@@ -35,7 +35,7 @@ export default function SiteFooter() {
             <div className="font-semibold text-slate-900">Contact</div>
             <div className="mt-2 grid gap-2 text-slate-700">
               <div>Phone: +961 …</div>
-              <div>Email: info@…</div>
+              <div>Email: info@happidoo.org</div>
               <div className="text-xs text-slate-500">
                 (Replace with client’s real info)
               </div>
