@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { QuoteSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rateLimit";
 import { addLead } from "@/lib/leadsStore";
-import { sendGmail } from "@/lib/gmailSender";
+// import { sendGmail } from "@/lib/gmailSender";
+import { sendSMTP } from "@/lib/smtpSender";
 
 export async function POST(req: NextRequest) {
   const ip =
@@ -42,18 +43,50 @@ export async function POST(req: NextRequest) {
 
   const lead = await addLead(body);
 
-  if (lead.email && lead.email.trim()) {
-  await sendGmail({
-    to: lead.email.trim(),
-    subject: `We received your quote #${lead.quoteNo}`,
-    text:
-      `✅ Quote received!\n\n` +
-      `Quote #: ${lead.quoteNo}\n` +
-      `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
-      `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
-      `We’ll contact you soon.`,
-  });
-}
+//   if (lead.email && lead.email.trim()) {
+//   await sendGmail({
+//     to: lead.email.trim(),
+//     subject: `We received your quote #${lead.quoteNo}`,
+//     text:
+//       `✅ Quote received!\n\n` +
+//       `Quote #: ${lead.quoteNo}\n` +
+//       `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+//       `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
+//       `We’ll contact you soon.`,
+//   });
+// }
+ if (lead.email && lead.email.trim()) {
+    await sendSMTP({
+      to: lead.email.trim(),
+      subject: `We received your quote #${lead.quoteNo}`,
+      text:
+        `✅ Quote received!\n\n` +
+        `Quote #: ${lead.quoteNo}\n` +
+        `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+        `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
+        `We’ll contact you soon.`,
+    });
+  }
+
+   const adminTo = process.env.ADMIN_NOTIFY_TO;
+  if (adminTo) {
+    await sendSMTP({
+      to: adminTo,
+      subject: `New quote #${lead.quoteNo} — ${lead.name || "Unknown"}`,
+      replyTo: lead.email?.trim() || undefined, // reply in inbox goes to customer
+      text:
+        `New quote received:\n\n` +
+        `Quote #: ${lead.quoteNo}\n` +
+        `Name: ${lead.name}\n` +
+        `Phone: ${lead.phone}\n` +
+        `Email: ${lead.email}\n` +
+        `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+        `City: ${lead.city}\n` +
+        `Address: ${lead.address}\n` +
+        `Products: ${(lead.productSlugs || []).join(", ") || lead.productSlug || "-"}\n` +
+        `Notes: ${lead.notes || "-"}`,
+    });
+  }
 
 
   return NextResponse.json(

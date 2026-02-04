@@ -39,7 +39,7 @@ export default function SiteHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  console.log("AdminLogoutButton typeof:", typeof AdminLogoutButton, AdminLogoutButton);
+  // console.log("AdminLogoutButton typeof:", typeof AdminLogoutButton, AdminLogoutButton);
 
 
   return (

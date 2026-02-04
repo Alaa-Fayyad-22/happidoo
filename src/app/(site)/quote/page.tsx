@@ -30,11 +30,25 @@ export default async function QuotePage({
 
   const requestedSlugs = parseSelectedProducts(sp);
 
-  const products = await prisma.product.findMany({
+  // const products = await prisma.product.findMany({
+  //   where: { isActive: true },
+  //   orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+  //   select: { slug: true, name: true },
+  // });
+
+    const dbProducts = await prisma.product.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    select: { slug: true, name: true },
+    select: { slug: true, name: true, imagePath: true }, // ✅ add imagePath
   });
+
+const products = dbProducts.map((p) => ({
+  slug: p.slug,
+  name: p.name,
+  imagePath: p.imagePath ? String(p.imagePath).replace(/^\/+/, "") : null, // keep folders
+}));
+
+
 
   const active = new Set(products.map((p) => p.slug));
   const initialSelectedSlugs = requestedSlugs.filter((s) => active.has(s));

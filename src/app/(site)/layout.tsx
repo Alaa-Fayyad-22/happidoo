@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import AOSProvider from "@/components/AOSProvider";
 
+
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen text-slate-900">
@@ -20,3 +21,4 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
