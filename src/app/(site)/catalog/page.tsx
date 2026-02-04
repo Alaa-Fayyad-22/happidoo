@@ -125,7 +125,7 @@ export default async function CatalogPage() {
                   </div>
 
                   <div className="shrink-0 rounded-2xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-                    {p.priceFrom == null ? "Quote" : `From $${p.priceFrom}`}
+                    {p.priceFrom == null ? "Quote" : `$${p.priceFrom}`}
                   </div>
                 </div>
 

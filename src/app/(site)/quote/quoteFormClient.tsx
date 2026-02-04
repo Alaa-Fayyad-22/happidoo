@@ -261,24 +261,24 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       setDoneQuoteNo(result.quoteNo ?? null);
 
       // WhatsApp confirmation to the user's number (click-to-chat)
-      if (result.phone) {
-        const productsText =
-          selectedProducts.length > 0
-            ? selectedProducts.map((p) => p.name).join(", ")
-            : (result.productSlugs || []).join(", ");
+      // if (result.phone) {
+      //   const productsText =
+      //     selectedProducts.length > 0
+      //       ? selectedProducts.map((p) => p.name).join(", ")
+      //       : (result.productSlugs || []).join(", ");
 
-        const createdLocal = new Date(result.createdAt).toLocaleString();
+      //   const createdLocal = new Date(result.createdAt).toLocaleString();
 
-        const msg =
-          `✅ Quote received!\n\n` +
-          `Quote #: ${result.quoteNo}\n` +
-          `Created: ${createdLocal}\n` +
-          `Event: ${result.eventDate} (${result.timeWindow})\n` +
-          `Products: ${productsText}\n\n` +
-          `We’ll contact you soon. Please keep this quote number for reference.`;
+      //   const msg =
+      //     `✅ Quote received!\n\n` +
+      //     `Quote #: ${result.quoteNo}\n` +
+      //     `Created: ${createdLocal}\n` +
+      //     `Event: ${result.eventDate} (${result.timeWindow})\n` +
+      //     `Products: ${productsText}\n\n` +
+      //     `We’ll contact you soon. Please keep this quote number for reference.`;
 
-        window.location.href = whatsappUrl(result.phone, msg);
-      }
+      //   window.location.href = whatsappUrl(result.phone, msg);
+      // }
     } catch (e: any) {
       setError(e?.message || "Failed to submit quote");
     } finally {
