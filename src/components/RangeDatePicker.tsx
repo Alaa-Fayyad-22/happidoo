@@ -1,4 +1,7 @@
-import { DayPicker, DateRange } from "react-day-picker";
+"use client";
+
+import { useMemo, useState } from "react";
+import { DayPicker, type DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
 
