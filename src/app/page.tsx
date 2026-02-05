@@ -3,6 +3,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
+import "./globals.css";
+
 
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
 type SignedUrlResp = { url: string };
@@ -55,42 +57,42 @@ function PlaceholderImage({
   return (
     <div className="relative overflow-hidden rounded-3xl border border-black/10 bg-white/60 p-4 shadow-xl backdrop-blur">
       {/* Decorative background */}
-      <div className="absolute inset-0">
+      {/* <div className="absolute inset-0">
         <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-pink-500/25 blur-3xl" />
         <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-yellow-400/25 blur-3xl" />
         <div className="absolute left-1/3 top-1/3 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
-      </div>
+      </div> */}
 
       {/* Placeholder content */}
       <div className="relative grid min-h-[360px] place-items-center rounded-2xl border border-dashed border-black/20 bg-white/50 p-6 text-center">
         <div className="max-w-md">
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-black/5">
             {/* simple icon */}
-            <svg
+            {/* <svg
               viewBox="0 0 24 24"
               fill="none"
               className="h-6 w-6 text-slate-700"
               aria-hidden="true"
-            >
-              <path
+            > */}
+              {/* <path
                 d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7Z"
                 stroke="currentColor"
                 strokeWidth="1.5"
-              />
-              <path
+              /> */}
+              {/* <path
                 d="M8 14l2-2 3 3 2-2 3 3"
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-              />
-              <path
+              /> */}
+              {/* <path
                 d="M9 9.5h.01"
                 stroke="currentColor"
                 strokeWidth="2.5"
                 strokeLinecap="round"
-              />
-            </svg>
+              /> */}
+            {/* </svg> */}
           </div>
 
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
@@ -187,7 +189,7 @@ function FeaturedProductCard({
           </div>
 
           <div className="shrink-0 rounded-2xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-            {p.priceFrom == null ? "Quote" : `From $${p.priceFrom}`}
+            {p.priceFrom == null ? "Quote" : `$${p.priceFrom}`}
           </div>
         </div>
 
@@ -256,7 +258,7 @@ function InfoCard({
   desc: string;
 }) {
   return (
-    <div className="rounded-3xl border border-black/10 bg-white/70 p-5 shadow-sm backdrop-blur">
+    <div className="rounded-3xl border border-black/10  p-5 shadow-sm backdrop-blur">
       <h3 className="font-semibold text-slate-900">{title}</h3>
       <p className="mt-1 text-sm text-slate-600">{desc}</p>
     </div>
@@ -285,11 +287,11 @@ export default async function Home() {
   return (
     <main className="relative overflow-hidden">
       {/* Decorative blobs (page-level) */}
-      <div className="pointer-events-none absolute inset-0">
+      {/* <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-pink-400/25 blur-3xl" />
         <div className="absolute top-24 -right-48 h-[560px] w-[560px] rounded-full bg-yellow-300/25 blur-3xl" />
         <div className="absolute bottom-[-280px] left-1/3 h-[620px] w-[620px] rounded-full bg-emerald-300/20 blur-3xl" />
-      </div>
+      </div> */}
 
       {/* HERO */}
       <section className="relative">
@@ -299,7 +301,7 @@ export default async function Home() {
   {/* TITLE — FIRST, NO CONTENT BEFORE */}
   <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
     Bounce House Rentals for
-    <span className="block text-pink-500">Birthdays & Events</span>
+    <span className="block text-[#FF8C00]">Birthdays & Events</span>
   </h1>
 
   <p className="mt-4 text-lg text-slate-600">
@@ -311,7 +313,7 @@ export default async function Home() {
   <div className="mt-6 flex flex-wrap gap-3">
     <Link
       href="/catalog"
-      className="inline-flex items-center justify-center rounded-2xl bg-pink-500 px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+      className="inline-flex items-center justify-center rounded-2xl bg-[#FF8C00] px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
     >
       Browse Inflatables
     </Link>
@@ -460,7 +462,7 @@ export default async function Home() {
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 href="/catalog"
-                className="inline-flex items-center justify-center rounded-2xl bg-pink-500 px-6 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+                className="inline-flex items-center justify-center rounded-2xl bg-[#FF8C00] px-6 py-3 font-semibold text-white shadow-lg hover:scale-[1.01] active:scale-[0.98] transition:smooth"
               >
                 Browse Inflatables
               </Link>
@@ -472,9 +474,9 @@ export default async function Home() {
               </Link>
             </div>
 
-            <p className="mt-4 text-xs text-slate-500">
+            {/* <p className="mt-4 text-xs text-slate-500">
               (Later: we can add review stars + real testimonials here once you connect the reviews source.)
-            </p>
+            </p> */}
           </div>
         </div>
       </section>

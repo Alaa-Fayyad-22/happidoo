@@ -13,7 +13,7 @@ export default function AboutPage() {
       {/* Hero / Who we are */}
       <section className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-10">
         <div className="max-w-3xl">
-          <p className="text-m font-semibold text-emerald-700">About Us</p>
+          <p className="text-lg font-bold text-[#00A0E9]">About Us</p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             A Lebanese team bringing fun to events, the right way.
@@ -30,7 +30,7 @@ export default function AboutPage() {
           <div className="mt-6">
             <Link
               href="/catalog"
-              className="inline-flex items-center justify-center rounded-2xl bg-pink-500 px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
+              className="inline-flex items-center justify-center rounded-2xl bg-[#FF8C00] px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
  >
               Browse inflatables
             </Link>
@@ -98,20 +98,20 @@ export default function AboutPage() {
       </section>
 
       {/* Strong CTA at the end */}
-      <section className="mt-10 sm:mt-12">
-        <div className="rounded-3xl border border-slate-200 bg-slate-900 p-8 text-white sm:p-10">
+      <section className="mt-10 sm:mt-12 ">
+        <div className="rounded-3xl border bg-[#FF8C00] p-8 text-white sm:p-10 inline-flex items-center justify-center flex-col text-center w-full">
           <h2 className="text-2xl font-bold">
             Planning an event?
           </h2>
-          <p className="mt-3 max-w-2xl text-sm text-slate-200">
+          <p className="mt-3 max-w-2xl text-m text-slate-200">
             Send us a quote request with your event details and we’ll get back to
             you with availability, pricing, and next steps.
           </p>
 
-          <div className="mt-6">
+          <div className="mt-6 inline-flex items-center justify-center ">
             <Link
               href="/quote"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+              className="inline-flex items-center justify-center rounded-2xl text-align-center bg-white px-6 py-3 text-m font-semibold text-slate-900 hover:bg-slate-100"
             >
               Get a Quote
             </Link>

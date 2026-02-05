@@ -1,3 +1,4 @@
+// src/lib/smtpSender.ts OR wherever you pasted this (no changes needed)
 import nodemailer from "nodemailer";
 
 const host = process.env.SMTP_HOST!;

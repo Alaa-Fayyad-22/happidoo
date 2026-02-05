@@ -19,7 +19,10 @@ type Lead = {
   productSlugs?: string[] | null;
   productNames?: string[] | null;
 
-  eventDate: string;
+  // changed: range
+  eventStartDate: string;
+  eventEndDate: string;
+
   timeWindow: string;
   city: string;
   address: string;
@@ -50,18 +53,15 @@ function statusBadgeClass(status: string) {
       return "bg-slate-50 text-slate-700 border-slate-100";
   }
 }
-function leadProductsText(x: Lead) {
-  const names = Array.isArray(x.productNames) ? x.productNames.filter(Boolean) : [];
-  const slugs = Array.isArray(x.productSlugs) ? x.productSlugs.filter(Boolean) : [];
 
-  // Prefer names if present
-  if (names.length > 0) return names.join(", ");
-
-  // fallback to multi slugs
-  if (slugs.length > 0) return slugs.join(", ");
-
-  // fallback to old single fields
-  return x.productName || x.productSlug || "—";
+function formatEventRange(start?: string, end?: string) {
+  const s = (start || "").trim();
+  const e = (end || "").trim();
+  if (!s && !e) return "—";
+  if (s && !e) return s;
+  if (!s && e) return e;
+  if (s === e) return s;
+  return `${s} → ${e}`;
 }
 
 function leadProductsBadges(x: Lead) {
@@ -77,8 +77,6 @@ function leadProductsBadges(x: Lead) {
 
   return items;
 }
-
-
 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -112,7 +110,6 @@ export default function AdminLeadsPage() {
   }, []);
 
   async function updateStatus(id: string, next: LeadStatus) {
-    // optimistic update
     const prev = leads;
     setLeads((cur) => cur.map((l) => (l.id === id ? { ...l, status: next } : l)));
     setSavingId(id);
@@ -129,12 +126,10 @@ export default function AdminLeadsPage() {
         throw new Error(data?.message || "Failed to update lead");
       }
 
-      // server truth
       const updated = data.lead as Lead;
       setLeads((cur) => cur.map((l) => (l.id === id ? { ...l, ...updated } : l)));
     } catch (e) {
       console.error(e);
-      // rollback
       setLeads(prev);
       alert("Failed to update status. Please try again.");
     } finally {
@@ -159,7 +154,8 @@ export default function AdminLeadsPage() {
         x.email,
         x.phone,
         x.city,
-        x.eventDate,
+        x.eventStartDate,
+        x.eventEndDate,
         x.productSlug || "",
         x.productName || "",
         x.status,
@@ -245,37 +241,37 @@ export default function AdminLeadsPage() {
                         </td>
 
                         <td className="px-4 py-3">
-                          <div className="font-semibold">{x.eventDate}</div>
+                          <div className="font-semibold">
+                            {formatEventRange(x.eventStartDate, x.eventEndDate)}
+                          </div>
                           <div className="text-slate-600">{x.timeWindow}</div>
                         </td>
 
                         <td className="px-4 py-3">{x.city}</td>
 
                         <td className="px-4 py-3">
-  <div className="flex flex-wrap gap-2">
-    {leadProductsBadges(x).map((label, idx) => (
-      <span
-        key={`${x.id}-p-${idx}`}
-        className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
-        title={label}
-      >
-        {label}
-      </span>
-    ))}
-  </div>
-</td>
-
+                          <div className="flex flex-wrap gap-2">
+                            {leadProductsBadges(x).map((label, idx) => (
+                              <span
+                                key={`${x.id}-p-${idx}`}
+                                className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
+                                title={label}
+                              >
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
 
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <select
                               value={(x.status as LeadStatus) || "new"}
-                              onChange={(e) =>
-                                updateStatus(x.id, e.target.value as LeadStatus)
-                              }
+                              onChange={(e) => updateStatus(x.id, e.target.value as LeadStatus)}
                               disabled={savingId === x.id}
-                              className={`rounded-xl border px-3 py-2 text-sm ${savingId === x.id ? "opacity-60" : ""
-                                }`}
+                              className={`rounded-xl border px-3 py-2 text-sm ${
+                                savingId === x.id ? "opacity-60" : ""
+                              }`}
                             >
                               {STATUS_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -309,7 +305,11 @@ export default function AdminLeadsPage() {
                         <div className="text-sm text-slate-600">{x.email}</div>
                         <div className="text-sm text-slate-600">{x.phone}</div>
                       </div>
-                      <div className={`rounded-2xl border px-3 py-1 text-xs font-semibold ${statusBadgeClass(x.status)}`}>
+                      <div
+                        className={`rounded-2xl border px-3 py-1 text-xs font-semibold ${statusBadgeClass(
+                          x.status
+                        )}`}
+                      >
                         {x.status}
                       </div>
                     </div>
@@ -321,26 +321,26 @@ export default function AdminLeadsPage() {
                       </div>
                       <div>
                         <span className="text-slate-500">Event: </span>
-                        {x.eventDate} • {x.timeWindow}
+                        {formatEventRange(x.eventStartDate, x.eventEndDate)} • {x.timeWindow}
                       </div>
                       <div>
                         <span className="text-slate-500">City: </span>
                         {x.city}
                       </div>
-                      <div>
-                      <div className="text-slate-500 mb-1">Products</div>
-                      <div className="flex flex-wrap gap-2">
-                        {leadProductsBadges(x).map((label, idx) => (
-                          <span
-                            key={`${x.id}-mp-${idx}`}
-                            className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
 
+                      <div>
+                        <div className="text-slate-500 mb-1">Products</div>
+                        <div className="flex flex-wrap gap-2">
+                          {leadProductsBadges(x).map((label, idx) => (
+                            <span
+                              key={`${x.id}-mp-${idx}`}
+                              className="inline-flex items-center rounded-full border bg-white px-2.5 py-1 text-xs font-semibold text-slate-800"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
 
                       <div className="mt-2">
                         <div className="text-slate-500 mb-1">Status</div>

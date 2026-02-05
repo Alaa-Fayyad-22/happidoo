@@ -6,8 +6,13 @@ type LeadRow = {
   id: string;
   createdAt: Date;
   status: string;
+
   productSlug: string | null;
-  eventDate: string;
+  productSlugs: string[];
+
+  eventStartDate: string;
+  eventEndDate: string;
+
   timeWindow: string;
   city: string;
   address: string;
@@ -22,12 +27,18 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   })) as LeadRow[];
 
-  // collect unique product slugs
+  // collect unique product slugs (support multi + fallback single)
   const slugs = Array.from(
     new Set(
       leads
-        .map((l: LeadRow) => l.productSlug)
-        .filter((s: string | null): s is string => typeof s === "string")
+        .flatMap((l) => (Array.isArray(l.productSlugs) && l.productSlugs.length ? l.productSlugs : []))
+        .concat(
+          leads
+            .map((l) => l.productSlug)
+            .filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+        )
+        .map((s) => s.trim())
+        .filter(Boolean)
     )
   );
 
@@ -38,18 +49,29 @@ export async function GET() {
       })
     : [];
 
-  const productMap = new Map<string, string>();
-  for (const p of products) {
-    productMap.set(p.slug, p.name);
-  }
+  const nameBySlug = new Map(products.map((p) => [p.slug, p.name]));
 
-  const leadsWithProduct = leads.map((l: LeadRow) => ({
-    ...l,
-    productName: l.productSlug ? productMap.get(l.productSlug) ?? null : null,
-  }));
+  const leadsEnriched = leads.map((l) => {
+    const normalizedSlugs =
+      Array.isArray(l.productSlugs) && l.productSlugs.length > 0
+        ? l.productSlugs
+        : l.productSlug
+        ? [l.productSlug]
+        : [];
 
-  return NextResponse.json(
-    { ok: true, leads: leadsWithProduct },
-    { status: 200 }
-  );
+    const productNames = normalizedSlugs.map((s) => nameBySlug.get(s) ?? s);
+
+    return {
+      ...l,
+      // keep your old single display fields working
+      productSlug: normalizedSlugs[0] ?? null,
+      productName: normalizedSlugs[0] ? nameBySlug.get(normalizedSlugs[0]) ?? null : null,
+
+      // add multi fields for badges UI
+      productSlugs: normalizedSlugs,
+      productNames,
+    };
+  });
+
+  return NextResponse.json({ ok: true, leads: leadsEnriched }, { status: 200 });
 }

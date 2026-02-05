@@ -1,6 +1,18 @@
+// src/lib/validators.ts
 import { z } from "zod";
 
 const TIME_WINDOWS = ["Morning", "Afternoon", "Evening"] as const;
+
+function isYmd(s: string) {
+  // Strict YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [y, m, d] = s.split("-").map(Number);
+  if (!y || !m || !d) return false;
+  if (m < 1 || m > 12) return false;
+  if (d < 1 || d > 31) return false;
+  // Simple check is fine here since we compare lexicographically too
+  return true;
+}
 
 export const QuoteSchema = z
   .object({
@@ -10,7 +22,9 @@ export const QuoteSchema = z
     // New field (optional but validated)
     productSlugs: z.array(z.string().trim().min(1)).optional().default([]),
 
-    eventDate: z.string().trim().min(1, "Event date is required."),
+    eventStartDate: z.string().trim().min(1, "Start date is required."),
+    eventEndDate: z.string().trim().min(1, "End date is required."),
+
     timeWindow: z.enum(TIME_WINDOWS),
     city: z.string().trim().min(1, "City is required."),
     address: z.string().trim().min(1, "Address is required."),
@@ -24,6 +38,31 @@ export const QuoteSchema = z
     website: z.string().optional().default(""),
   })
   .superRefine((data, ctx) => {
+    // Validate date format
+    if (data.eventStartDate && !isYmd(data.eventStartDate)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["eventStartDate"],
+        message: "Start date must be in YYYY-MM-DD format.",
+      });
+    }
+    if (data.eventEndDate && !isYmd(data.eventEndDate)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["eventEndDate"],
+        message: "End date must be in YYYY-MM-DD format.",
+      });
+    }
+
+    // Rule: end >= start (lexicographic works for YYYY-MM-DD)
+    if (data.eventStartDate && data.eventEndDate && data.eventEndDate < data.eventStartDate) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["eventEndDate"],
+        message: "End date must be on or after start date.",
+      });
+    }
+
     // Rule: at least one contact method
     const hasPhone = (data.phone ?? "").trim().length > 0;
     const hasEmail = (data.email ?? "").trim().length > 0;
@@ -47,6 +86,5 @@ export const QuoteSchema = z
       });
     }
   });
-
 
 export type QuoteInput = z.infer<typeof QuoteSchema>;

@@ -1,12 +1,21 @@
+// src/lib/leadsStore.ts
 import { prisma } from "@/lib/prisma";
 import type { QuoteInput } from "@/lib/validators";
 
 function normalizeSlugs(xs: unknown): string[] {
   if (!Array.isArray(xs)) return [];
-  const cleaned = xs
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const cleaned = xs.map((v) => String(v).trim()).filter(Boolean);
   return Array.from(new Set(cleaned));
+}
+
+function normalizeDateRange(input: QuoteInput) {
+  // In case UI sends only start (or only end), we make it sane:
+  const start = (input as any).eventStartDate?.trim?.() ?? "";
+  const end = (input as any).eventEndDate?.trim?.() ?? "";
+
+  if (start && !end) return { eventStartDate: start, eventEndDate: start };
+  if (!start && end) return { eventStartDate: end, eventEndDate: end };
+  return { eventStartDate: start, eventEndDate: end };
 }
 
 export async function addLead(input: QuoteInput) {
@@ -16,21 +25,39 @@ export async function addLead(input: QuoteInput) {
 
   // New: productSlugs array (multi-select)
   const array = normalizeSlugs((input as any).productSlugs);
+  
 
   // Merge logic:
   // - if array exists, use it
   // - else fall back to old single slug
   const merged = array.length > 0 ? array : single ? [single] : [];
+  
+  const products = merged.length
+  ? await prisma.product.findMany({
+      where: { slug: { in: merged } },
+      select: { slug: true, name: true },
+    })
+  : [];
+
+const nameBySlug = new Map(products.map((p) => [p.slug, p.name]));
+const productNames = merged.map((s) => nameBySlug.get(s) ?? s);
+
+
+  const { eventStartDate, eventEndDate } = normalizeDateRange(input);
 
   const lead = await prisma.lead.create({
     data: {
       // Backward compatible: keep productSlug as the first item
       productSlug: merged[0] ?? null,
 
-      // New: store full list (requires Prisma schema update)
+      // New: store full list
       productSlugs: merged,
+      productNames,
 
-      eventDate: input.eventDate,
+      // changed: date range
+      eventStartDate,
+      eventEndDate,
+
       timeWindow: input.timeWindow,
       city: input.city,
       address: input.address,

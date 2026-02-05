@@ -1,9 +1,18 @@
+// src/app/api/quote/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { QuoteSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rateLimit";
 import { addLead } from "@/lib/leadsStore";
 // import { sendGmail } from "@/lib/gmailSender";
 import { sendSMTP } from "@/lib/smtpSender";
+
+function formatEventRange(start: string, end: string) {
+  if (!start && !end) return "-";
+  if (start && !end) return start;
+  if (!start && end) return end;
+  if (start === end) return start; // single-day
+  return `${start} → ${end}`;
+}
 
 export async function POST(req: NextRequest) {
   const ip =
@@ -43,102 +52,81 @@ export async function POST(req: NextRequest) {
 
   const lead = await addLead(body);
 
-//   if (lead.email && lead.email.trim()) {
-//   await sendGmail({
-//     to: lead.email.trim(),
-//     subject: `We received your quote #${lead.quoteNo}`,
-//     text:
-//       `✅ Quote received!\n\n` +
-//       `Quote #: ${lead.quoteNo}\n` +
-//       `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
-//       `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
-//       `We’ll contact you soon.`,
-//   });
-// }
- if (lead.email && lead.email.trim()) {
+  const eventText = `${formatEventRange(lead.eventStartDate, lead.eventEndDate)} (${lead.timeWindow})`;
+  const productNames = Array.isArray((lead as any).productNames) ? (lead as any).productNames : [];
+const productsText =
+  (productNames.length ? productNames.join(", ") : "") ||
+  (lead.productSlugs?.length ? lead.productSlugs.join(", ") : "") ||
+  lead.productSlug ||
+  "-";
+
+
+  // Customer confirmation
+  if (lead.email && lead.email.trim()) {
     await sendSMTP({
       to: lead.email.trim(),
       subject: `We received your quote #${lead.quoteNo}`,
       text:
         `✅ Quote received!\n\n` +
         `Quote #: ${lead.quoteNo}\n` +
-        `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
-        `Products: ${(lead.productSlugs || []).join(", ")}\n\n` +
+        `Event: ${eventText}\n` +
+        `Products: ${productsText}\n\n` +
         `We’ll contact you soon.`,
     });
   }
 
-   const adminTo = process.env.ADMIN_NOTIFY_TO;
+  // Admin notify
+  const adminTo = process.env.ADMIN_NOTIFY_TO;
   if (adminTo) {
     await sendSMTP({
       to: adminTo,
       subject: `New quote #${lead.quoteNo} — ${lead.name || "Unknown"}`,
-      replyTo: lead.email?.trim() || undefined, // reply in inbox goes to customer
+      replyTo: lead.email?.trim() || undefined,
       text:
         `New quote received:\n\n` +
         `Quote #: ${lead.quoteNo}\n` +
         `Name: ${lead.name}\n` +
         `Phone: ${lead.phone}\n` +
         `Email: ${lead.email}\n` +
-        `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
+        `Event: ${eventText}\n` +
         `City: ${lead.city}\n` +
         `Address: ${lead.address}\n` +
-        `Products: ${(lead.productSlugs || []).join(", ") || lead.productSlug || "-"}\n` +
+        `Products: ${productsText}\n` +
         `Notes: ${lead.notes || "-"}`,
     });
   }
 
-  // Send WhatsApp confirmation (best-effort)
-  // if (lead.phone) {
-  //   try {
-  //     const productsText = (lead.productSlugs || []).length
-  //       ? (lead.productSlugs || []).join(", ")
-  //       : lead.productSlug || "";
-
-  //     const msg =
-  //       `✅ Quote received!\n\n` +
-  //       `Quote #: ${lead.quoteNo}\n` +
-  //       `Event: ${lead.eventDate} (${lead.timeWindow})\n` +
-  //       `Products: ${productsText}\n\n` +
-  //       `We’ll contact you soon.`;
-
-  //     await sendWhatsApp(lead.phone, msg);
-  //   } catch (err) {
-  //     // don't fail the request if WhatsApp send fails
-  //     console.error("Failed to send WhatsApp confirmation:", err);
-  //   }
-  // }
-
-
   return NextResponse.json(
-  {
-    ok: true,
-    message: "Received",
+    {
+      ok: true,
+      message: "Received",
 
-    // IDs
-    leadId: lead.id,          // UUID (internal)
-    quoteNo: lead.quoteNo,    // integer (if you added it)
+      // IDs
+      leadId: lead.id,
+      quoteNo: lead.quoteNo,
 
-    // server-generated
-    createdAt: lead.createdAt,
+      // server-generated
+      createdAt: lead.createdAt,
 
-    // event details
-    eventDate: lead.eventDate,
-    timeWindow: lead.timeWindow,
+      // event details
+      eventStartDate: lead.eventStartDate,
+      eventEndDate: lead.eventEndDate,
+      timeWindow: lead.timeWindow,
 
-    // products
-    productSlug: lead.productSlug,
-    productSlugs: lead.productSlugs,
+ 
+      productName: productNames[0] ?? null,
+      productNames,
 
-    // optional echo (safe for same-user response)
-    name: lead.name,
-    phone: lead.phone,
-    email: lead.email,
-    city: lead.city,
-    address: lead.address,
-    notes: lead.notes,
-    status: lead.status,
-  },
-  { status: 200 }
-);
+
+      // optional echo
+      name: lead.name,
+      phone: lead.phone,
+      email: lead.email,
+      city: lead.city,
+      address: lead.address,
+      notes: lead.notes,
+      status: lead.status,
+    },
+    { status: 200 }
+  );
 }

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     google: "GjFGs0_kz2ar_60uUIaatcH-Dw3qeETrU4Z6UCOfhoE",
   },
   title: {
-    default: "Inflatables Rentals",
+    default: "Happidoo",
     template: "%s • Inflatables Rentals",
   },
   description: "Inflatables rentals for birthdays and events. Delivery and setup included.",

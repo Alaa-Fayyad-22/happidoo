@@ -2,14 +2,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
+import { DayPicker, type DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import "react-day-picker/dist/style.css";
 
 type ProductOption = {
   slug: string;
   name: string;
   imagePath?: string | null; // storage key in bucket
 };
-
 
 type Props = {
   products: ProductOption[];
@@ -20,7 +21,8 @@ type QuotePayload = {
   productSlug: string | null; // backward compatible
   productSlugs: string[]; // new (multi)
 
-  eventDate: string;
+  eventStartDate: string; // YYYY-MM-DD
+  eventEndDate: string; // YYYY-MM-DD
   timeWindow: "Morning" | "Afternoon" | "Evening";
   city: string;
   address: string;
@@ -41,10 +43,14 @@ type QuoteResponse = {
   leadId: string;
   quoteNo: number;
   createdAt: string;
-  eventDate: string;
+
+  eventStartDate: string;
+  eventEndDate: string;
   timeWindow: string;
+
   productSlug: string | null;
   productSlugs: string[];
+
   name: string;
   phone: string;
   email: string;
@@ -67,6 +73,26 @@ function todayYmd() {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function toYmd(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function fromYmd(s: string) {
+  if (!s) return undefined;
+  const [y, m, d] = s.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+
+function prettyRangeLabel(from?: Date, to?: Date) {
+  if (!from && !to) return "Select a date range";
+  if (from && !to) return `${format(from, "MMM d, yyyy")} → …`;
+  return `${format(from!, "MMM d, yyyy")} → ${format(to!, "MMM d, yyyy")}`;
 }
 
 function digitsOnly(s: string) {
@@ -103,12 +129,8 @@ async function fetchCountries(): Promise<Country[]> {
 
     if (!iso2 || !name || !root) continue;
 
-    // If multiple suffixes exist, pick the first to keep UI simple.
-    // (You can later improve to choose the shortest/most common per country.)
     const suffix = suffixes.length > 0 ? String(suffixes[0] ?? "") : "";
     const code = `${root}${suffix}`.trim();
-
-    // Must contain digits to be useful
     if (!digitsOnly(code)) continue;
 
     out.push({ iso2, name, code, flag });
@@ -141,6 +163,135 @@ async function postQuote(payload: QuotePayload): Promise<QuoteResponse> {
   return data as QuoteResponse;
 }
 
+function RangeDatePicker({
+  startYmd,
+  endYmd,
+  minYmd,
+  disabled,
+  onChange,
+}: {
+  startYmd: string;
+  endYmd: string;
+  minYmd: string; // todayYmd()
+  disabled?: boolean;
+  onChange: (next: { startYmd: string; endYmd: string }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const from = useMemo(() => fromYmd(startYmd), [startYmd]);
+  const to = useMemo(() => fromYmd(endYmd), [endYmd]);
+  const minDate = useMemo(() => fromYmd(minYmd)!, [minYmd]);
+
+  const range: DateRange | undefined = useMemo(() => {
+    if (!from && !to) return undefined;
+    return { from, to };
+  }, [from, to]);
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className="w-full rounded-2xl border px-4 py-3 text-left focus:ring-2 focus:ring-slate-200 outline-none disabled:opacity-50"
+      >
+        <div className="text-sm text-slate-900">{prettyRangeLabel(from, to)}</div>
+        <div className="mt-1 text-xs text-slate-500">
+          Click to choose start and end dates
+        </div>
+      </button>
+
+      {open && (
+  <div
+    className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    onClick={() => setOpen(false)} // close only when clicking backdrop
+  >
+    <div
+      className="mx-auto mt-10 w-[92vw] max-w-md rounded-3xl border bg-white shadow-2xl"
+      onClick={(e) => e.stopPropagation()} // ✅ prevent click-through
+      onMouseDown={(e) => e.stopPropagation()} // extra safety
+    >
+      <div className="flex items-center justify-between border-b px-5 py-4">
+        <div>
+          <div className="text-base font-bold text-slate-900">Select date range</div>
+          <div className="text-xs text-slate-600">
+            Click a start date, then an end date.
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
+            setOpen(false);
+          }}
+          className="rounded-2xl border px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+        >
+          Done
+        </button>
+      </div>
+
+      <div className="px-5 py-4">
+        <DayPicker
+          mode="range"
+          numberOfMonths={1}
+          selected={range}
+          defaultMonth={from || minDate}
+          disabled={{ before: minDate }}
+          onSelect={(r) => {
+            const nextStart = r?.from ? toYmd(r.from) : "";
+            const nextEnd = r?.to ? toYmd(r.to) : "";
+            onChange({ startYmd: nextStart, endYmd: nextEnd });
+          }}
+        />
+
+        <div className="mt-3 text-xs text-slate-600">
+          Selected: <span className="font-semibold">{prettyRangeLabel(from, to)}</span>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onChange({ startYmd: "", endYmd: "" });
+            }}
+            className="text-xs font-semibold text-slate-700 hover:text-slate-900"
+          >
+            Clear
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
+              setOpen(false);
+            }}
+            className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+          >
+            Confirm
+          </button>
+        </div>
+
+        <p className="mt-3 text-xs text-slate-500">
+          Tip: if you only pick one day, we’ll treat it as a single-day event.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
+    </>
+  );
+}
+
 export default function QuoteFormClient({ products, initialSelectedSlugs }: Props) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -148,6 +299,10 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
   const [error, setError] = useState("");
 
   const today = useMemo(() => todayYmd(), []);
+//   const [today, setToday] = useState<string>("");
+//   useEffect(() => {
+//   setToday(todayYmd()); // client-only
+// }, []);
 
   // Countries
   const [countries, setCountries] = useState<Country[]>([]);
@@ -159,13 +314,13 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       productSlugs: initial,
       productSlug: initial.length > 0 ? initial[0] : null,
 
-      eventDate: "",
+      eventStartDate: "",
+      eventEndDate: "",
       timeWindow: "Morning",
       city: "",
       address: "",
       name: "",
 
-      // Will be overwritten after countries load (defaults keep UI usable instantly)
       phoneCountry: "LB",
       phoneCode: "+961",
       phone: "",
@@ -185,24 +340,17 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
         if (!alive) return;
         setCountries(list);
 
-        // If current selection isn't present, or if you want a better default,
-        // try to infer from browser locale (e.g. "en-US" -> "US")
-        const locale = (typeof navigator !== "undefined" ? navigator.language : "") || "";
-        const guessIso2 = locale.split("-")[1]?.toUpperCase() || "";
+        const lb =
+        list.find((c) => c.iso2 === "LB") ||
+        list.find((c) => c.name.toLowerCase().includes("lebanon"));
 
-        const fallback =
-          list.find((c) => c.iso2 === guessIso2) ||
-          list.find((c) => c.iso2 === form.phoneCountry) ||
-          list.find((c) => c.iso2 === "LB") ||
-          list[0];
-
-        if (fallback) {
-          setForm((p) => ({
-            ...p,
-            phoneCountry: fallback.iso2,
-            phoneCode: fallback.code,
-          }));
-        }
+      if (lb) {
+        setForm((p) => ({
+          ...p,
+          phoneCountry: lb.iso2,
+          phoneCode: lb.code,
+        }));
+      }
       } catch {
         // keep defaults
       } finally {
@@ -232,7 +380,15 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       if (form.productSlugs.length === 0) {
         throw new Error("Please select at least one product.");
       }
-      if (!form.eventDate.trim()) throw new Error("Event date is required.");
+
+      if (!form.eventStartDate.trim()) throw new Error("Start date is required.");
+      if (!form.eventEndDate.trim()) throw new Error("End date is required.");
+
+      // safety check
+      if (form.eventEndDate < form.eventStartDate) {
+        throw new Error("End date must be on or after start date.");
+      }
+
       if (!form.city.trim()) throw new Error("City is required.");
       if (!form.address.trim()) throw new Error("Address is required.");
       if (!form.name.trim()) throw new Error("Name is required.");
@@ -240,7 +396,7 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
         throw new Error("Please provide at least a phone number or an email address.");
       }
 
-      // Convert to E.164 before POST (so DB stores a universal format)
+      // Convert to E.164 before POST
       const phoneE164 = form.phone.trim()
         ? buildE164(form.phoneCode, form.phone)
         : "";
@@ -252,7 +408,7 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       const payload: QuotePayload = {
         ...form,
         phone: phoneE164 || "",
-        productSlug: form.productSlugs[0] ?? null, // keep old in sync
+        productSlug: form.productSlugs[0] ?? null,
       };
 
       const result = await postQuote(payload);
@@ -260,23 +416,23 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
       setDone(true);
       setDoneQuoteNo(result.quoteNo ?? null);
 
-      // WhatsApp confirmation to the user's number (click-to-chat)
+      // Optional: WhatsApp redirect (currently off)
       // if (result.phone) {
       //   const productsText =
       //     selectedProducts.length > 0
       //       ? selectedProducts.map((p) => p.name).join(", ")
       //       : (result.productSlugs || []).join(", ");
-
+      //
       //   const createdLocal = new Date(result.createdAt).toLocaleString();
-
+      //
       //   const msg =
       //     `✅ Quote received!\n\n` +
       //     `Quote #: ${result.quoteNo}\n` +
       //     `Created: ${createdLocal}\n` +
-      //     `Event: ${result.eventDate} (${result.timeWindow})\n` +
+      //     `Dates: ${result.eventStartDate} → ${result.eventEndDate} (${result.timeWindow})\n` +
       //     `Products: ${productsText}\n\n` +
       //     `We’ll contact you soon. Please keep this quote number for reference.`;
-
+      //
       //   window.location.href = whatsappUrl(result.phone, msg);
       // }
     } catch (e: any) {
@@ -291,6 +447,12 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
     const e164 = buildE164(form.phoneCode, form.phone);
     return e164 || "";
   }, [form.phone, form.phoneCode]);
+
+  const headerRangeText = useMemo(() => {
+    const from = fromYmd(form.eventStartDate);
+    const to = fromYmd(form.eventEndDate);
+    return prettyRangeLabel(from, to);
+  }, [form.eventStartDate, form.eventEndDate]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 md:px-8">
@@ -307,9 +469,10 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
           <p className="mt-2 text-slate-600">
             Tell us about your event. We’ll confirm availability and final pricing.
           </p>
+
           <div className="mt-3 text-xs text-slate-500">
-            Selected date:{" "}
-            <span className="font-semibold text-slate-700">{form.eventDate}</span>
+            Selected range:{" "}
+            <span className="font-semibold text-slate-700">{headerRangeText}</span>
           </div>
         </div>
 
@@ -456,16 +619,19 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
 
             {/* EVENT DETAILS */}
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Event date *">
-                <input
-                  type="date"
-                  value={form.eventDate}
-                  min={today}
-                  onChange={(e) => setForm((p) => ({ ...p, eventDate: e.target.value }))}
-                  className="w-full rounded-2xl border px-4 py-3 focus:ring-2 focus:ring-slate-200 outline-none"
+              <div className="grid gap-2">
+                <div className="text-sm font-semibold text-slate-800">Event date range *</div>
+                <RangeDatePicker
+                  startYmd={form.eventStartDate}
+                  endYmd={form.eventEndDate}
+                  minYmd={today}
                   disabled={busy}
+                  onChange={({ startYmd, endYmd }) =>
+                    setForm((p) => ({ ...p, eventStartDate: startYmd, eventEndDate: endYmd }))
+                  }
                 />
-              </Field>
+              </div>
+
 
               <Field label="Time window *">
                 <select
@@ -575,46 +741,45 @@ function ProductPicker({
   }, [products, q]);
 
   useEffect(() => {
-  let alive = true;
+    let alive = true;
 
-  (async () => {
-    const need = products.filter((p) => p.imagePath && !signed[p.slug]);
-    if (need.length === 0) return;
+    (async () => {
+      const need = products.filter((p) => p.imagePath && !signed[p.slug]);
+      if (need.length === 0) return;
 
-    const entries = await Promise.all(
-      need.map(async (p) => {
-        try {
-          const res = await fetch(
-            `/api/image/product?path=${encodeURIComponent(p.imagePath!)}`,
-            { cache: "no-store" }
-          );
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data?.ok || !data?.url) return [p.slug, ""] as const;
-          return [p.slug, String(data.url)] as const;
-        } catch {
-          return [p.slug, ""] as const;
+      const entries = await Promise.all(
+        need.map(async (p) => {
+          try {
+            const res = await fetch(
+              `/api/image/product?path=${encodeURIComponent(p.imagePath!)}`,
+              { cache: "no-store" }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data?.ok || !data?.url) return [p.slug, ""] as const;
+            return [p.slug, String(data.url)] as const;
+          } catch {
+            return [p.slug, ""] as const;
+          }
+        })
+      );
+
+      if (!alive) return;
+
+      setSigned((prev) => {
+        const next = { ...prev };
+        for (const [slug, url] of entries) {
+          if (url) next[slug] = url;
         }
-      })
-    );
+        return next;
+      });
+    })();
 
-    if (!alive) return;
-
-    setSigned((prev) => {
-      const next = { ...prev };
-      for (const [slug, url] of entries) {
-        if (url) next[slug] = url;
-      }
-      return next;
-    });
-  })();
-
-  return () => {
-    alive = false;
-  };
-  // IMPORTANT: only depend on products, not signed (avoid loop)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [products]);
-
+    return () => {
+      alive = false;
+    };
+    // IMPORTANT: only depend on products, not signed (avoid loop)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   function toggle(slug: string) {
     const next = new Set(selectedSet);
@@ -706,9 +871,7 @@ function ProductPicker({
             <div className="flex items-center justify-between border-b px-5 py-4">
               <div>
                 <div className="text-base font-bold text-slate-900">Select products</div>
-                <div className="text-xs text-slate-600">
-                  Pick one or more items for this quote.
-                </div>
+                <div className="text-xs text-slate-600">Pick one or more items for this quote.</div>
               </div>
 
               <button
@@ -731,16 +894,13 @@ function ProductPicker({
 
               <div className="mt-4 max-h-[55vh] overflow-auto rounded-2xl border">
                 {filtered.length === 0 ? (
-                  <div className="p-4 text-sm text-slate-600">
-                    No products match your search.
-                  </div>
+                  <div className="p-4 text-sm text-slate-600">No products match your search.</div>
                 ) : (
                   <ul className="divide-y">
                     {filtered.map((p) => {
                       const checked = selectedSet.has(p.slug);
 
                       return (
-                        
                         <li key={p.slug} className="px-4 py-3">
                           <label className="flex cursor-pointer items-center gap-3">
                             <input
@@ -751,29 +911,27 @@ function ProductPicker({
                             />
                             <div className="h-28 w-28 overflow-hidden rounded-xl border bg-slate-50 shrink-0">
                               {p.imagePath ? (
-                              signed[p.slug] ? (
-                                <img
-                                  src={signed[p.slug]}
-                                  alt={p.name}
-                                  className="h-full w-full object-cover"
-                                  loading="lazy"
-                                  referrerPolicy="no-referrer"
-                                />
+                                signed[p.slug] ? (
+                                  <img
+                                    src={signed[p.slug]}
+                                    alt={p.name}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full grid place-items-center text-[10px] text-slate-400">
+                                    Loading…
+                                  </div>
+                                )
                               ) : (
-                                <div className="h-full w-full grid place-items-center text-[10px] text-slate-400">
-                                  Loading…
-                                </div>
-                              )
-                            ) : (
                                 <div className="h-full w-full grid place-items-center text-[10px] text-slate-400">
                                   No image
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-slate-900">
-                                {p.name}
-                              </div>
+                              <div className="text-sm font-semibold text-slate-900">{p.name}</div>
                               <div className="text-xs text-slate-500">{p.slug}</div>
                             </div>
                           </label>

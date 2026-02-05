@@ -4,19 +4,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* (135deg, rgb(0, 160, 233) 0%, rgb(255, 140, 0) 100%) */
 :root {
-  --bg: 248 250 252;
+  --bg-gradient: linear-gradient(
+    135deg,
+    rgb(142, 194, 218) 0%,
+    rgb(250, 244, 237) 100%
+  );
+
+  --bg: rgb(117, 154, 202);
+
   --text: 15 23 42;
 }
 
-html, body {
+/* html, body {
   height: 100%;
+} */
+ body {
+  min-height: 100vh;
+  background: var(--bg-gradient)  !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed  !important; /* key line */
+  color: rgb(var(--text)) !important;
+  overflow-x: hidden;
 }
 
-body {
-  background: rgb(var(--bg));
-  color: rgb(var(--text));
-}
+/* body {
+  background: var(--bg-gradient);
+  /* background: var(--bg); */
+  /* color: rgb(var(--text));
+} */ 
 
 @keyframes float {
   0%, 100% {
