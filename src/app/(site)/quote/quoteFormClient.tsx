@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
 
@@ -66,6 +67,18 @@ type Country = {
   code: string; // calling code like "+1"
   flag: string;
 };
+
+
+function BodyPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(children, document.body);
+}
+
+
 
 function todayYmd() {
   const d = new Date();
@@ -182,6 +195,16 @@ function RangeDatePicker({
   const to = useMemo(() => fromYmd(endYmd), [endYmd]);
   const minDate = useMemo(() => fromYmd(minYmd)!, [minYmd]);
 
+  useEffect(() => {
+  if (!open) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [open]);
+
+
   const range: DateRange | undefined = useMemo(() => {
     if (!from && !to) return undefined;
     return { from, to };
@@ -202,90 +225,92 @@ function RangeDatePicker({
       </button>
 
       {open && (
-  <div
-    className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm"
-    role="dialog"
-    aria-modal="true"
-    onClick={() => setOpen(false)} // close only when clicking backdrop
-  >
-    <div
-      className="mx-auto mt-10 w-[92vw] max-w-md rounded-3xl border bg-white shadow-2xl"
-      onClick={(e) => e.stopPropagation()} // ✅ prevent click-through
-      onMouseDown={(e) => e.stopPropagation()} // extra safety
-    >
-      <div className="flex items-center justify-between border-b px-5 py-4">
-        <div>
-          <div className="text-base font-bold text-slate-900">Select date range</div>
-          <div className="text-xs text-slate-600">
-            Click a start date, then an end date.
+        <BodyPortal>
+          <div
+            className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setOpen(false)} // close only when clicking backdrop
+          >
+            <div
+              className="mx-auto mt-10 w-[92vw] max-w-md rounded-3xl border bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()} // ✅ prevent click-through
+              onMouseDown={(e) => e.stopPropagation()} // extra safety
+            >
+              <div className="flex items-center justify-between border-b px-5 py-4">
+                <div>
+                  <div className="text-base font-bold text-slate-900">Select date range</div>
+                  <div className="text-xs text-slate-600">
+                    Click a start date, then an end date.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
+                    setOpen(false);
+                  }}
+                  className="rounded-2xl border px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                >
+                  Done
+                </button>
+              </div>
+
+              <div className="px-5 py-4">
+                <DayPicker
+                  mode="range"
+                  numberOfMonths={1}
+                  selected={range}
+                  defaultMonth={from || minDate}
+                  disabled={{ before: minDate }}
+                  onSelect={(r) => {
+                    const nextStart = r?.from ? toYmd(r.from) : "";
+                    const nextEnd = r?.to ? toYmd(r.to) : "";
+                    onChange({ startYmd: nextStart, endYmd: nextEnd });
+                  }}
+                />
+
+                <div className="mt-3 text-xs text-slate-600">
+                  Selected: <span className="font-semibold">{prettyRangeLabel(from, to)}</span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onChange({ startYmd: "", endYmd: "" });
+                    }}
+                    className="text-xs font-semibold text-slate-700 hover:text-slate-900"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
+                      setOpen(false);
+                    }}
+                    className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                  >
+                    Confirm
+                  </button>
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  Tip: if you only pick one day, we’ll treat it as a single-day event.
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
-            setOpen(false);
-          }}
-          className="rounded-2xl border px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-        >
-          Done
-        </button>
-      </div>
-
-      <div className="px-5 py-4">
-        <DayPicker
-          mode="range"
-          numberOfMonths={1}
-          selected={range}
-          defaultMonth={from || minDate}
-          disabled={{ before: minDate }}
-          onSelect={(r) => {
-            const nextStart = r?.from ? toYmd(r.from) : "";
-            const nextEnd = r?.to ? toYmd(r.to) : "";
-            onChange({ startYmd: nextStart, endYmd: nextEnd });
-          }}
-        />
-
-        <div className="mt-3 text-xs text-slate-600">
-          Selected: <span className="font-semibold">{prettyRangeLabel(from, to)}</span>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onChange({ startYmd: "", endYmd: "" });
-            }}
-            className="text-xs font-semibold text-slate-700 hover:text-slate-900"
-          >
-            Clear
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (startYmd && !endYmd) onChange({ startYmd, endYmd: startYmd });
-              setOpen(false);
-            }}
-            className="rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-          >
-            Confirm
-          </button>
-        </div>
-
-        <p className="mt-3 text-xs text-slate-500">
-          Tip: if you only pick one day, we’ll treat it as a single-day event.
-        </p>
-      </div>
-    </div>
-  </div>
+          </BodyPortal>
 )}
 
     </>
@@ -740,6 +765,17 @@ function ProductPicker({
     return products.filter((p) => `${p.name} ${p.slug}`.toLowerCase().includes(query));
   }, [products, q]);
 
+
+  useEffect(() => {
+  if (!open) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [open]);
+
+
   useEffect(() => {
     let alive = true;
 
@@ -859,16 +895,18 @@ function ProductPicker({
       </div>
 
       {open && (
+        <BodyPortal>
         <div
-          className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
-        >
-          <div className="mx-auto mt-10 w-[92vw] max-w-2xl rounded-3xl border bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b px-5 py-4">
+    className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+    onMouseDown={(e) => {
+      if (e.target === e.currentTarget) setOpen(false);
+    }}
+  >
+    <div className="w-full max-w-2xl rounded-3xl border bg-white shadow-2xl max-h-[90vh] overflow-hidden">
+      {/* header */}
+      <div className="flex items-center justify-between border-b px-5 py-4">
               <div>
                 <div className="text-base font-bold text-slate-900">Select products</div>
                 <div className="text-xs text-slate-600">Pick one or more items for this quote.</div>
@@ -959,6 +997,7 @@ function ProductPicker({
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </>
   );
