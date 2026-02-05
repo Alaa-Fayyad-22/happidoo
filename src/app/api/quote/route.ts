@@ -6,7 +6,7 @@ import { addLead } from "@/lib/leadsStore";
 // import { sendGmail } from "@/lib/gmailSender";
 import { sendSMTP } from "@/lib/smtpSender";
 
-function formatEventRange(start: string, end: string) {
+function formatEventRange(start: string | null, end: string | null) {
   if (!start && !end) return "-";
   if (start && !end) return start;
   if (!start && end) return end;
