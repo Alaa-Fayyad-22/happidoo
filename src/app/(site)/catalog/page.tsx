@@ -6,10 +6,24 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
-
 type SignedUrlResp = { url: string };
+
+const tabClass = (active: boolean, theme?: "bounce" | "snack") => {
+  if (!active) {
+    return "inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold bg-white text-slate-700 hover:bg-slate-50 transition";
+  }
+
+  if (theme === "bounce") {
+    return "inline-flex items-center justify-center rounded-full   bg-[#FF8C00] px-4 py-2 text-sm font-semibold text-white transition";
+  }
+
+  if (theme === "snack") {
+    return "inline-flex items-center justify-center rounded-full   bg-[#00A0E9] px-4 py-2 text-sm font-semibold text-white transition";
+  }
+
+  return "inline-flex items-center justify-center rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition";
+};
 
 async function getBaseUrlFromHeaders() {
   const h = await headers();
@@ -27,10 +41,10 @@ async function signProductImage(imagePath: string): Promise<string | null> {
   if (!base) return null;
 
   try {
-    const res = await fetch(`${base}/api/image/product?path=${encodeURIComponent(path)}`, {
-      method: "GET",
-      next: { revalidate: 60 * 9 },
-    });
+    const res = await fetch(
+      `${base}/api/image/product?path=${encodeURIComponent(path)}`,
+      { method: "GET", next: { revalidate: 60 * 9 } }
+    );
     if (!res.ok) return null;
     const data = (await res.json()) as SignedUrlResp;
     return data?.url || null;
@@ -39,19 +53,38 @@ async function signProductImage(imagePath: string): Promise<string | null> {
   }
 }
 
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ station?: string }>;
+}) {
+  const sp = await searchParams;
+  const station = sp?.station; // "1" | "2" | "all" | undefined
 
-export default async function CatalogPage() {
+  const whereStation =
+    station === "1" ? 1 : station === "2" ? 2 : null;
+
   const products = await prisma.product.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(whereStation ? { stationId: whereStation } : {}),
+    },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
 
   const items = await Promise.all(
     products.map(async (p: ProductRow) => ({
-  ...p,
-  signedImageUrl: p.imagePath ? await signProductImage(p.imagePath) : null,
-}))
+      ...p,
+      signedImageUrl: p.imagePath ? await signProductImage(p.imagePath) : null,
+    }))
   );
+
+  // const tabClass = (active: boolean) =>
+  //   `inline-flex items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition ${
+  //     active
+  //       ? "bg-slate-900 text-white border-slate-900"
+  //       : "bg-white text-slate-700 hover:bg-slate-50"
+  //   }`;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 md:px-8">
@@ -64,10 +97,36 @@ export default async function CatalogPage() {
 
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Catalog</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Catalog
+            </h1>
             <p className="mt-2 text-slate-600">
-              Browse inflatables. Tap an item to view details and request a quote.
+              Browse Bounce Stations and Snack Stations. Tap an item to view details and request a quote.
             </p>
+
+            {/* Tabs */}
+            <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href="/catalog?station=1"
+                  className={tabClass(station === "1", "bounce")}
+                >
+                  Bounce Stations
+                </Link>
+
+                <Link
+                  href="/catalog?station=2"
+                  className={tabClass(station === "2", "snack")}
+                >
+                  Snack Stations
+                </Link>
+
+                <Link
+                  href="/catalog"
+                  className={tabClass(!station || station === "all")}
+                >
+                  All
+                </Link>
+              </div>
           </div>
 
           <Link
@@ -118,7 +177,9 @@ export default async function CatalogPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-lg font-semibold text-slate-900">{p.name}</div>
+                    <div className="truncate text-lg font-semibold text-slate-900">
+                      {p.name}
+                    </div>
                     <div className="mt-1 text-sm text-slate-600 truncate">
                       {p.size ? `Size: ${p.size}` : "Size: —"}
                     </div>
@@ -130,7 +191,9 @@ export default async function CatalogPage() {
                 </div>
 
                 {p.description ? (
-                  <p className="mt-3 line-clamp-2 text-sm text-slate-600">{p.description}</p>
+                  <p className="mt-3 line-clamp-2 text-sm text-slate-600">
+                    {p.description}
+                  </p>
                 ) : (
                   <p className="mt-3 line-clamp-2 text-sm text-slate-500">
                     Tap to view details and request a quote.

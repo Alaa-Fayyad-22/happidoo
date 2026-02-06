@@ -315,7 +315,7 @@ export default async function Home() {
       href="/catalog"
       className="inline-flex items-center justify-center rounded-2xl bg-[#FF8C00] px-5 py-3 font-semibold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
     >
-      Browse Inflatables
+      Browse the Fun
     </Link>
 
     <Link
