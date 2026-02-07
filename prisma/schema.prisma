@@ -43,3 +43,25 @@ model Product {
   imagePath   String   @default("")
   stationId   Int?     @default(1)
 }
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+
+  // rating is required, testimonial text is optional
+  rating      Int
+  message     String?
+  name        String?
+  city        String?
+  source      String?  // e.g. "website", "whatsapp", "google"
+  
+  // moderation / safety
+  isApproved  Boolean  @default(true)
+  isHidden    Boolean  @default(false)
+
+  // anti-spam + context
+  ip          String?
+  userAgent   String?
+
+  @@index([isApproved, isHidden, createdAt])
+}

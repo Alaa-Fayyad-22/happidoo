@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import TestimonialsSection from "@/components/TestimonialsSection";
+
 
 import "./globals.css";
 
@@ -461,6 +463,9 @@ export default async function Home() {
           </div>
         </div>
       </section> */}
+
+      {/* TESTIMONIALS */}
+      <TestimonialsSection />
 
       {/* FINAL CTA */}
       <section className="relative">

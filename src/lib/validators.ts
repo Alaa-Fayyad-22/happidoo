@@ -88,3 +88,13 @@ export const QuoteSchema = z
   });
 
 export type QuoteInput = z.infer<typeof QuoteSchema>;
+
+export const testimonialInput = z.object({
+  rating: z.number().int().min(1).max(5),
+  message: z.string().trim().min(10).max(500).optional().or(z.literal("")),
+  name: z.string().trim().min(2).max(60).optional().or(z.literal("")),
+  city: z.string().trim().min(2).max(60).optional().or(z.literal("")),
+  website: z.string().optional(), // honeypot
+});
+
+export type TestimonialInput = z.infer<typeof testimonialInput>;

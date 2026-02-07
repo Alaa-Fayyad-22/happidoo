@@ -1,4 +1,6 @@
 import Link from "next/link";
+import TestimonialsSection from "@/components/TestimonialsSection";
+
 
 const CATS = [
   { title: "Bouncers", desc: "Perfect for birthdays and small parties." },

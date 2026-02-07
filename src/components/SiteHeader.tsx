@@ -13,6 +13,7 @@ const NAV = [
   { href: "/gallery", label: "Gallery" },
   { href: "/about", label: "About Us" },
   { href: "/faq", label: "FAQ" },
+  { href: "/rate-us", label: "Rate Us" },
 ];
 
 function classNames(...xs: Array<string | false | null | undefined>) {
@@ -137,15 +138,25 @@ export default function SiteHeader() {
         {/* Mobile buttons */}
         <div className="flex items-center gap-2 md:hidden">
           {isAdmin ? (
-            <AdminLogoutButton />
-          ) : (
-            <Link
-              href="/quote"
-              className="rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              Quote
-            </Link>
-          )}
+  <AdminLogoutButton />
+) : (
+  <>
+    <Link
+      href="/rate-us"
+      className="rounded-2xl border px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+    >
+      Rate
+    </Link>
+
+    <Link
+      href="/quote"
+      className="rounded-2xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+    >
+      Quote
+    </Link>
+  </>
+)}
+
 
           <button
             type="button"
