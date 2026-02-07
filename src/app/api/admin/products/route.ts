@@ -43,6 +43,12 @@ function slugify(input: string): string {
     .replace(/-{2,}/g, "-");
 }
 
+function toStationId(v: unknown): number {
+  const n = typeof v === "number" ? v : parseInt(String(v ?? ""), 10);
+  return n === 2 ? 2 : 1; // only allow 1 or 2, default 1
+}
+
+
 /**
  * Ensures slug uniqueness by suffixing: my-product, my-product-2, my-product-3 ...
  */
@@ -88,6 +94,7 @@ export async function POST(req: Request) {
   const features = toStr(body?.features).trim();
   const description = toStr(body?.description).trim();
   const imagePath = toStr(body?.imagePath).trim();
+  const stationId = toStationId(body?.stationId);
 
   const priceFrom = toNullableInt(body?.priceFrom);
   const sortOrder = toNullableInt(body?.sortOrder) ?? 0;
@@ -101,6 +108,7 @@ export async function POST(req: Request) {
       name,
       slug,
       category,
+      stationId,
       priceFrom,
       size,
       features,

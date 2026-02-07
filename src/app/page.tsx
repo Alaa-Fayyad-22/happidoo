@@ -115,23 +115,24 @@ function PlaceholderImage({
   );
 }
 
+
 function StepCard({
   step,
   title,
   desc,
-}: {
-  step: string;
-  title: string;
-  desc: string;
-}) {
+  titleClassName,
+}: StepCardProps) {
   return (
     <div className="rounded-3xl border border-black/10 bg-white/70 p-5 shadow-sm backdrop-blur">
       <div className="flex items-start gap-3">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-black/5 text-sm font-bold text-slate-900">
           {step}
         </div>
+
         <div>
-          <h3 className="font-semibold text-slate-900">{title}</h3>
+          <h3 className={`font-semibold ${titleClassName ?? "text-[#FF8C00]"}`}>
+            {title}
+          </h3>
           <p className="mt-1 text-sm text-slate-600">{desc}</p>
         </div>
       </div>
@@ -265,12 +266,22 @@ function InfoCard({
   );
 }
 
+type StepCardProps = {
+  step: string;
+  title: string;
+  desc: string;
+  titleClassName?: string;
+};
+
 export default async function Home() {
   const products = await prisma.product.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     take: 3,
   });
+
+  
+
 
   const featured = await Promise.all(
     products.map(async (p: ProductRow) => ({
@@ -299,14 +310,16 @@ export default async function Home() {
           <div className="relative">
 
   {/* TITLE — FIRST, NO CONTENT BEFORE */}
-  <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-    Bounce House Rentals for
-    <span className="block text-[#FF8C00]">Birthdays & Events</span>
+  <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+   Welcome - You’ve just bounced into 
+       {/* <div className="inline-block text-2xl sm:text-3xl font-extrabold tracking-tight  bg-gradient-to-r from-[#00A0E9] to-[#FF8C00] bg-clip-text text-transparent">
+              Happidoo
+            </div> */}
+    <span className="inline text-[#FF8C00]"> Happidoo!</span>
   </h1>
 
-  <p className="mt-4 text-lg text-slate-600">
-    Pick a bouncer, slide, or obstacle course — we’ll handle delivery,
-    setup, and pickup.
+  <p className="mt-4 text-xl text-slate-600">
+   Pick the fun, we deliver the experience!
   </p>
 
   {/* CTA BUTTONS */}
@@ -322,15 +335,15 @@ export default async function Home() {
       href="/quote"
       className="inline-flex items-center justify-center rounded-2xl bg-black/5 px-5 py-3 font-semibold text-slate-900 hover:bg-black/10 transition"
     >
-      Get a Quote
+      Request a Quote
     </Link>
   </div>
 
   {/* TRUST PILLS — MOVED BELOW */}
   <div className="mt-6 flex flex-wrap gap-2">
-    <StatPill label="Sanitized after every use" />
-    <StatPill label="On-time delivery & setup" />
-    <StatPill label="Safe, family-friendly fun" />
+    <StatPill label="Spotless After Every Use" />
+    <StatPill label="Right On Time, Every Time" />
+    <StatPill label="Big Smiles, Safe Fun" />
   </div>
   {/* <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 p-4 text-sm text-slate-600 shadow-sm backdrop-blur">
               <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -378,8 +391,9 @@ export default async function Home() {
           <div className="grid gap-4 md:grid-cols-3">
             <StepCard
               step="1"
-              title="Choose an inflatable"
-              desc="Browse the catalog and pick the perfect bouncer, slide, or obstacle course."
+              title="Choose your preferences"
+              desc="Browse the catalog and pick the perfect equipment for your event."
+
             />
             <StepCard
               step="2"
@@ -429,7 +443,7 @@ export default async function Home() {
       </section>
 
       {/* TRUST / WHY US */}
-      <section className="relative">
+      {/* <section className="relative">
         <div className="mx-auto max-w-6xl px-4 py-10">
           <div className="grid gap-4 lg:grid-cols-3">
             <InfoCard
@@ -446,7 +460,7 @@ export default async function Home() {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* FINAL CTA */}
       <section className="relative">
@@ -464,7 +478,7 @@ export default async function Home() {
                 href="/catalog"
                 className="inline-flex items-center justify-center rounded-2xl bg-[#FF8C00] px-6 py-3 font-semibold text-white shadow-lg hover:scale-[1.01] active:scale-[0.98] transition:smooth"
               >
-                Browse Inflatables
+                Browse the Fun 
               </Link>
               <Link
                 href="/quote"

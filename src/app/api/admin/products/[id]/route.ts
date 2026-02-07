@@ -68,10 +68,16 @@ async function getId(ctx: Ctx): Promise<string> {
   const id = params?.id;
   return typeof id === "string" ? id : "";
 }
+function toStationId(v: unknown): number {
+  const n = parseInt(String(v ?? "").trim(), 10);
+  return n === 2 ? 2 : 1; // allow only 1 or 2
+}
+
 
 export async function PATCH(req: Request, ctx: Ctx) {
   const id = await getId(ctx);
   if (!id) return jsonError("Missing product id", 400);
+  
 
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) return jsonError("Product not found", 404);
@@ -102,6 +108,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if ("features" in body) data.features = toStr(body?.features).trim();
   if ("description" in body) data.description = toStr(body?.description).trim();
   if ("imagePath" in body) data.imagePath = toStr(body?.imagePath).trim();
+  if ("stationId" in body) data.stationId = toStationId(body?.stationId);
 
   if ("priceFrom" in body) data.priceFrom = toNullableInt(body?.priceFrom);
   if ("sortOrder" in body) data.sortOrder = toNullableInt(body?.sortOrder) ?? 0;

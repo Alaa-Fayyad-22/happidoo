@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,42 +9,37 @@ datasource db {
 }
 
 model Lead {
-  id        String   @id @default(uuid())
-  quoteNo   Int      @unique @default(autoincrement())
-  createdAt DateTime @default(now())
-  status    String   @default("new")
-
-  productSlug  String?
-  productSlugs String[] @default([])
-  productNames String[] @default([])
-
-  eventStartDate String? // TEMP optional
-  eventEndDate   String? // TEMP optional
-
-  timeWindow String
-  city       String
-  address    String
-  name       String
-  phone      String
-  email      String
-  notes      String @default("")
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  status         String   @default("new")
+  productSlug    String?
+  timeWindow     String
+  city           String
+  address        String
+  name           String
+  phone          String
+  email          String
+  notes          String   @default("")
+  productSlugs   String[] @default([])
+  quoteNo        Int      @unique @default(autoincrement())
+  eventEndDate   String?
+  eventStartDate String?
+  productNames   String[] @default([])
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   name        String
-  slug        String @unique
-  category    String @default("general")
-  stationId   Int?   @default(1)
+  slug        String   @unique
+  category    String   @default("general")
   priceFrom   Int?
-  size        String @default("")
-  features    String @default("") // newline-separated
-  description String @default("")
-
-  imagePath String  @default("") // storage path inside bucket
-  isActive  Boolean @default(true)
-  sortOrder Int     @default(0)
+  size        String   @default("")
+  features    String   @default("")
+  description String   @default("")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  imagePath   String   @default("")
+  stationId   Int?     @default(1)
 }
