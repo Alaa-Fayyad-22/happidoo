@@ -38,16 +38,15 @@ export default async function TestimonialsSection() {
   <section className="mx-auto max-w-6xl px-4 py-14">
   <div className="text-center">
     <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
-      What parents say
+      What parents say 🎈
     </h2>
-    <p className="mt-2 text-slate-600">Real words from real events</p>
+    <p className="mt-2 text-slate-600">Real ratings from real events</p>
   </div>
 
   <div className="mt-10">
     <TestimonialsSlider items={items} />
   </div>
 </section>
-
 
 
   );

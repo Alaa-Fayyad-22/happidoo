@@ -119,11 +119,11 @@ export default function RateUsForm() {
         <textarea
           className="mt-2 w-full rounded-2xl border border-slate-200 p-3 text-sm outline-none focus:border-slate-300"
           rows={4}
-          placeholder="Tell us how it went (10+ characters if you write something)."
+          // placeholder="Tell us how it went (10+ characters if you write something)."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <p className="mt-1 text-xs text-slate-500">Tip: short and specific is gold.</p>
+        {/* <p className="mt-1 text-xs text-slate-500">Tip: short and specific is gold.</p> */}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

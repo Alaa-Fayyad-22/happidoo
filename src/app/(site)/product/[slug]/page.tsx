@@ -66,12 +66,12 @@ export default async function ProductPage({ params }: Props) {
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Image */}
         <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-          <div className="relative aspect-[4/3] bg-slate-100">
+          <div className="h-full w-full object-cover object-center transition group-hover:scale-105">
             {signedImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={signedImageUrl} alt={product.name} className="h-full w-full object-cover" />
+              <img src={signedImageUrl} alt={product.name} className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105" />
             ) : (
-              <div className="flex h-full items-center justify-center text-xs text-slate-400">
+              <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100 flex items-center justify-center text-xs text-slate-400">
                 No image
               </div>
             )}

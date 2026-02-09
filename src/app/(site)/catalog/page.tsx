@@ -151,13 +151,13 @@ export default async function CatalogPage({
               className="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               {/* Image */}
-              <div className="relative h-52 bg-slate-100">
+              <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100">
                 {p.signedImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={p.signedImageUrl}
                     alt={p.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="h-full w-full object-cover object-center transition group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-slate-400">

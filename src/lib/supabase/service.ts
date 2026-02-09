@@ -7,5 +7,8 @@ if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
 if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing");
 
 export const supabaseService = createClient(url, key, {
-  auth: { persistSession: false },
+  auth: { persistSession: false ,
+          autoRefreshToken: false,    // 🚫 no refresh token
+          detectSessionInUrl: false,  
+  },
 });

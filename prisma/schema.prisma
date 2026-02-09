@@ -56,7 +56,7 @@ model Testimonial {
   source      String?  // e.g. "website", "whatsapp", "google"
   
   // moderation / safety
-  isApproved  Boolean  @default(true)
+  isApproved  Boolean  @default(false)
   isHidden    Boolean  @default(false)
 
   // anti-spam + context

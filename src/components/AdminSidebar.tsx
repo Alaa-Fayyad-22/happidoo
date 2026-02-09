@@ -14,6 +14,9 @@ export default function AdminSidebar() {
         <Link className="rounded-2xl bg-slate-50 px-3 py-2 hover:bg-slate-100" href="/admin/products">
           Products
         </Link>
+        <Link className="rounded-2xl bg-slate-50 px-3 py-2 hover:bg-slate-100" href="/admin/testimonials">
+          Ratings
+        </Link>
         <Link className="rounded-2xl bg-slate-50 px-3 py-2 hover:bg-slate-100" href="/admin/settings">
           Settings
         </Link>
