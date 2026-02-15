@@ -54,16 +54,16 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in, but not allowed admin email
-  if (!isAdminEmail(user.email)) {
-    if (isAdminApi) {
-      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
-    }
-    // For pages, redirect away (or you could show a 403 page)
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
+  // // Logged in, but not allowed admin email
+  // if (!isAdminEmail(user.email)) {
+  //   if (isAdminApi) {
+  //     return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+  //   }
+  //   // For pages, redirect away (or you could show a 403 page)
+  //   const url = req.nextUrl.clone();
+  //   url.pathname = "/";
+  //   return NextResponse.redirect(url);
+  // }
 
   return res;
 }
