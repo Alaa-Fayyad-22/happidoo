@@ -151,7 +151,7 @@ export default async function CatalogPage({
               className="group overflow-hidden rounded-3xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
               {/* Image */}
-              <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100">
+              <div className="relative aspect-[1.5/1] sm:aspect-[3/2] bg-slate-100">
                 {p.signedImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
