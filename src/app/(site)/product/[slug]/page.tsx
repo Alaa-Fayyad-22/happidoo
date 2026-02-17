@@ -14,21 +14,21 @@ async function getBaseUrlFromHeaders() {
   return `${proto}://${host}`;
 }
 
-async function signProductImage(imagePath: string): Promise<string | null> {
-  const path = (imagePath || "").trim();
-  if (!path) return null;
+async function signProductImage(path?: string): Promise<string | null> {
+  const trimmed = path?.trim();
+  if (!trimmed) return null;
 
   const base = await getBaseUrlFromHeaders();
   if (!base) return null;
 
   try {
-    const res = await fetch(`${base}/api/image/product?path=${encodeURIComponent(path)}`, {
-      method: "GET",
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${base}/api/image/product?path=${encodeURIComponent(trimmed)}`,
+      { method: "GET", cache: "no-store" }
+    );
     if (!res.ok) return null;
     const data = (await res.json()) as SignedUrlResp;
-    return data?.url || null;
+    return data?.url ?? null;
   } catch {
     return null;
   }
@@ -38,22 +38,22 @@ type Params = { slug: string };
 type Props = { params: Params | Promise<Params> };
 
 export default async function ProductPage({ params }: Props) {
-  const resolvedParams = await Promise.resolve(params);
-  const slug = (resolvedParams?.slug || "").trim();
-  if (!slug) notFound();
+  const { slug } = await Promise.resolve(params) ?? {};
+  if (!slug?.trim()) notFound();
 
   const product = await prisma.product.findUnique({ where: { slug } });
-  if (!product || !product.isActive) notFound();
+  if (!product?.isActive) notFound();
 
-  const signedImageUrl = product.imagePath ? await signProductImage(product.imagePath) : null;
+  const signedImageUrl = await signProductImage(product.imagePath);
 
-  const featuresList: string[] = (product.features || "")
+  const featuresList = (product.features || "")
     .split(/\r?\n|,/)
-    .map((x: string) => x.trim())
+    .map((f) => f.trim())
     .filter(Boolean);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 md:px-8">
+      {/* Back link */}
       <div className="mb-6">
         <Link
           href="/catalog"
@@ -65,22 +65,24 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Image */}
-        <section className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-          <div className="h-full w-full object-cover object-center transition group-hover:scale-105">
-            {signedImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={signedImageUrl} alt={product.name} className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105" />
-            ) : (
-              <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100 flex items-center justify-center text-xs text-slate-400">
-                No image
-              </div>
-            )}
-
-            <div className="absolute left-4 top-4">
-              <span className="inline-flex items-center rounded-full border bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
-                {product.category || "general"}
-              </span>
+        <section className="overflow-hidden rounded-3xl border bg-white shadow-sm relative">
+          {signedImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={signedImageUrl}
+              alt={product.name}
+              className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+              No image
             </div>
+          )}
+
+          <div className="absolute left-4 top-4">
+            <span className="inline-flex items-center rounded-full border bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
+              {product.category || "general"}
+            </span>
           </div>
         </section>
 
@@ -94,12 +96,11 @@ export default async function ProductPage({ params }: Props) {
                 <span className="rounded-2xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
                   {product.priceFrom == null ? "Get quote" : `$${product.priceFrom}`}
                 </span>
-
-                {product.size ? (
+                {product.size && (
                   <span className="rounded-2xl border bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                     Size: {product.size}
                   </span>
-                ) : null}
+                )}
               </div>
             </div>
 
@@ -111,34 +112,35 @@ export default async function ProductPage({ params }: Props) {
             </Link>
           </div>
 
-          {product.description ? (
+          {product.description && (
             <div className="mt-6">
               <div className="text-sm font-semibold text-slate-900">Description</div>
               <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
                 {product.description}
               </div>
             </div>
-          ) : null}
+          )}
 
-          {featuresList.length ? (
+          {featuresList.length > 0 && (
             <div className="mt-6">
               <div className="text-sm font-semibold text-slate-900">Features</div>
               <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-                {featuresList.map((f: string, i: number) => (
+                {featuresList.map((feature, idx) => (
                   <li
-                    key={i}
+                    key={idx}
                     className="flex items-start gap-2 rounded-2xl border bg-slate-50 p-3 text-sm text-slate-700"
                   >
                     <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white text-xs">
                       ✓
                     </span>
-                    <span>{f}</span>
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
-          ) : null}
+          )}
 
+          {/* Next steps */}
           <div className="mt-8 rounded-3xl border bg-slate-50 p-4">
             <div className="text-xs font-semibold text-slate-700">Next steps</div>
             <div className="mt-1 text-sm text-slate-600">

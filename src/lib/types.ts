@@ -15,4 +15,5 @@ export type Product = {
   images: string[];      // /images/products/...
   featured?: boolean;
   active: boolean;
+  imagePath:string | null; // new field for the original image path 
 };
