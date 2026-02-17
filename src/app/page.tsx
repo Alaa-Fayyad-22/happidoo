@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import TestimonialsSection from "@/components/TestimonialsSection";
-import HeroSlider from "@/components/HeroSlider";
+import HeroSlider, { ProductSlider } from "@/components/HeroSlider";
 import { supabaseService } from "@/lib/supabase/service";
 
 import "./globals.css";
@@ -48,54 +48,15 @@ function StepCard({ step, title, desc, titleClassName }: {
   );
 }
 
-function FeaturedProductCard({ p }: { p: ProductRow & { signedImageUrl: string | null } }) {
-  return (
-    <Link
-      href={`/product/${p.slug}`}
-      className="group overflow-hidden rounded-3xl border border-black/10 bg-white/70 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <div className="relative aspect-[1.5/1] sm:aspect-[3/2] bg-slate-100">
-        {p.signedImageUrl ? (
-          <img
-            src={p.signedImageUrl}
-            alt={p.name}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-slate-400">No image</div>
-        )}
-        <div className="absolute left-3 top-3">
-          <span className="inline-flex items-center rounded-full border bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
-            {p.category ?? "general"}
-          </span>
-        </div>
-      </div>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="truncate text-lg font-semibold text-slate-900">{p.name}</div>
-            <div className="mt-1 text-sm text-slate-600 truncate">{p.size ? `Size: ${p.size}` : "Size: —"}</div>
-          </div>
-          <div className="shrink-0 rounded-2xl bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-            {p.priceFrom == null ? "Quote" : `$${p.priceFrom}`}
-          </div>
-        </div>
-        <p className="mt-3 line-clamp-2 text-sm text-slate-600">
-          {p.description ?? "Tap to view details and request a quote."}
-        </p>
-      </div>
-    </Link>
-  );
-}
+
 
 // ── Skeletons ─────────────────────────────────────────────────────────────────
 
 function HeroSliderSkeleton() {
+  // Must exactly mirror HeroSlider's wrapper classes to prevent layout shift:
+  //   aspect-[1.5/1] sm:aspect-[3/2]  +  rounded-3xl shadow-xl  +  bg-slate-100
   return (
-    // Exact same dimensions as HeroSlider — zero layout shift on swap
-    <div className="relative w-full overflow-hidden rounded-3xl bg-slate-200 aspect-[4/3] lg:aspect-auto lg:h-[460px]">
+    <div className="relative aspect-[1.5/1] sm:aspect-[3/2] w-full overflow-hidden rounded-3xl shadow-xl bg-slate-200">
       <div
         className="absolute inset-0"
         style={{
@@ -110,19 +71,72 @@ function HeroSliderSkeleton() {
 }
 
 function FeaturedProductsSkeleton() {
+  // Mirrors ProductSlider: 3 cards side by side + arrows row below
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="overflow-hidden rounded-3xl border border-black/10 bg-white/70 shadow-sm">
-          <div className="aspect-[3/2] bg-slate-200 animate-pulse" />
-          <div className="p-5 space-y-3">
-            <div className="h-5 w-3/4 rounded-lg bg-slate-200 animate-pulse" />
-            <div className="h-4 w-1/2 rounded-lg bg-slate-200 animate-pulse" />
-            <div className="h-4 w-full rounded-lg bg-slate-200 animate-pulse" />
+    <div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm animate-pulse">
+            <div className="aspect-[3/2] bg-slate-200" />
+            <div className="p-5 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="h-5 w-3/4 rounded-lg bg-slate-200" />
+                  <div className="h-4 w-1/3 rounded-lg bg-slate-200" />
+                </div>
+                <div className="h-6 w-14 rounded-2xl bg-slate-200 shrink-0" />
+              </div>
+              <div className="h-4 w-full rounded-lg bg-slate-200" />
+              <div className="h-4 w-5/6 rounded-lg bg-slate-200" />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <div className="h-9 w-9 rounded-full bg-slate-200 animate-pulse" />
+        <div className="h-9 w-9 rounded-full bg-slate-200 animate-pulse" />
+      </div>
     </div>
+  );
+}
+
+/**
+ * Renders nothing visible — only <link rel="preload"> tags.
+ * Lives in its own <Suspense> so it streams preload hints the instant
+ * both promises resolve, independently of the visible UI components.
+ * This means the browser starts fetching images while loading.tsx is still shown.
+ */
+async function ImagePreloader({
+  heroPromise,
+  featuredPromise,
+}: {
+  heroPromise: Promise<string[]>;
+  featuredPromise: Promise<(ProductRow & { signedImageUrl: string | null })[]>;
+}) {
+  const [heroImages, featured] = await Promise.all([heroPromise, featuredPromise]);
+  const featuredUrls = featured
+    .slice(0, 3)
+    .map((p) => p.signedImageUrl)
+    .filter(Boolean) as string[];
+
+  const allImages = [
+    ...heroImages.map((src, i) => ({ src, priority: i === 0 ? "high" : "low" })),
+    ...featuredUrls.map((src, i) => ({ src, priority: i === 0 ? "high" : "low" })),
+  ];
+
+  return (
+    <>
+      {allImages.map(({ src, priority }) => (
+        <link
+          key={src}
+          rel="preload"
+          as="image"
+          href={src}
+          // @ts-ignore
+          fetchPriority={priority}
+        />
+      ))}
+    </>
   );
 }
 
@@ -135,7 +149,26 @@ function FeaturedProductsSkeleton() {
  */
 async function HeroSection({ imagesPromise }: { imagesPromise: Promise<string[]> }) {
   const heroImages = await imagesPromise;
-  return <HeroSlider images={heroImages} />;
+
+  return (
+    <>
+      {/* Preload ALL hero images the moment URLs are signed —
+          this fires while loading.tsx is still visible, so images
+          are already in cache when the slider mounts.
+          First = high priority (shown immediately), rest = low (background fetch). */}
+      {heroImages.map((src, i) => (
+        <link
+          key={src}
+          rel="preload"
+          as="image"
+          href={src}
+          // @ts-ignore
+          fetchpriority={i === 0 ? "high" : "low"}
+        />
+      ))}
+      <HeroSlider images={heroImages} />
+    </>
+  );
 }
 
 async function FeaturedProducts({
@@ -153,12 +186,33 @@ async function FeaturedProducts({
     );
   }
 
+  const products = featured.map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description,
+    category: p.category,
+    size: p.size,
+    priceFrom: p.priceFrom,
+    signedImageUrl: p.signedImageUrl,
+  }));
+
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {featured.map((p) => (
-        <FeaturedProductCard key={p.id} p={p} />
+    <>
+      {/* Preload the first 3 featured images (the ones visible on load).
+          Fires as soon as signing resolves — while loading.tsx may still be up. */}
+      {products.slice(0, 3).map((p, i) => p.signedImageUrl && (
+        <link
+          key={p.signedImageUrl}
+          rel="preload"
+          as="image"
+          href={p.signedImageUrl}
+          // @ts-ignore
+          fetchpriority={i === 0 ? "high" : "low"}
+        />
       ))}
-    </div>
+      <ProductSlider products={products} />
+    </>
   );
 }
 
@@ -185,7 +239,7 @@ export default function Home() {
     .findMany({
       where: { isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 3,
+      take: 6,
     })
     .then((products) =>
       Promise.all(
@@ -198,6 +252,15 @@ export default function Home() {
 
   return (
     <main className="relative overflow-hidden">
+      {/* ── Image preloader — no visible UI, just <link rel="preload"> tags.
+              Streams into <head> the instant signing resolves, while
+              loading.tsx may still be visible. Gives browser a head start. ── */}
+      <Suspense fallback={null}>
+        <ImagePreloader
+          heroPromise={heroImagesPromise}
+          featuredPromise={featuredPromise}
+        />
+      </Suspense>
       {/* ── Hero ── */}
       <section className="relative">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-2 lg:items-center">
