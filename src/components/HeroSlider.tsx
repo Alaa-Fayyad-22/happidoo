@@ -146,34 +146,50 @@ function ProductCard({ p }: { p: Product }) {
 export function ProductSlider({ products }: ProductSliderProps) {
   const [step, setStep] = useState(0);
   const [fading, setFading] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const count = products.length;
 
-  // Auto-advance every 5s
+  // Detect screen size
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)"); // lg breakpoint
+    setIsDesktop(query.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    query.addEventListener("change", handler);
+    return () => query.removeEventListener("change", handler);
+  }, []);
+
+  const stepSize = isDesktop ? 3 : 1;
+  const visibleCount = isDesktop ? 3 : 1;
+
+  // Auto-advance
   useEffect(() => {
     if (count < 2) return;
-    const id = setInterval(() => go(3), 5000);
+    const id = setInterval(() => go(stepSize), 4000);
     return () => clearInterval(id);
-  }, [count, step]);
+  }, [count, step, stepSize]);
 
-  function go(dir: 3 | -3) {
+  function go(dir: number) {
     if (fading) return;
     setFading(true);
     setTimeout(() => {
       setStep((s) => (s + dir + count) % count);
       setFading(false);
-    }, 100);
+    }, 300);
   }
 
   if (!count) return null;
 
-  // Show exactly 3 cards, rotated by step
-  const visible = [0, 1, 2].map((i) => products[(i + step) % count]);
+  // Show 1 card on mobile, 3 on desktop
+  const visible = Array.from({ length: visibleCount }).map((_, i) =>
+    products[(i + step) % count]
+  );
 
   return (
     <div className="relative">
-      {/* Cards — always exactly 3 in a row, crossfade on step change */}
+      {/* Cards — responsive: 1 on mobile, 3 on desktop */}
       <div
-        className="grid grid-cols-3 gap-5 transition-opacity duration-100"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-5 transition-opacity duration-300"
         style={{ opacity: fading ? 0 : 1 }}
       >
         {visible.map((p, i) => (
@@ -184,14 +200,14 @@ export function ProductSlider({ products }: ProductSliderProps) {
       {/* Arrows */}
       <div className="mt-4 flex items-center justify-end gap-2">
         <button
-          onClick={() => go(-3)}
+          onClick={() => go(-stepSize)}
           className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-slate-700 hover:bg-slate-50 transition text-sm shadow-sm"
           aria-label="Previous"
         >
           ←
         </button>
         <button
-          onClick={() => go(3)}
+          onClick={() => go(stepSize)}
           className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-slate-700 hover:bg-slate-50 transition text-sm shadow-sm"
           aria-label="Next"
         >

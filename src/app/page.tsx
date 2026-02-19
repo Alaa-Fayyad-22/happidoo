@@ -119,14 +119,29 @@ async function ImagePreloader({
     .map((p) => p.signedImageUrl)
     .filter(Boolean) as string[];
 
-  const allImages = [
-    ...heroImages.map((src, i) => ({ src, priority: i === 0 ? "high" : "low" })),
-    ...featuredUrls.map((src, i) => ({ src, priority: i === 0 ? "high" : "low" })),
-  ];
+  // Deduplicate URLs — same image might be in both hero and featured
+  const seenUrls = new Set<string>();
+  const uniqueImages: Array<{ src: string; priority: string }> = [];
+
+  // Add hero images first (they get high priority for index 0)
+  heroImages.forEach((src, i) => {
+    if (!seenUrls.has(src)) {
+      seenUrls.add(src);
+      uniqueImages.push({ src, priority: i === 0 ? "high" : "low" });
+    }
+  });
+
+  // Add featured images that aren't already in hero
+  featuredUrls.forEach((src, i) => {
+    if (!seenUrls.has(src)) {
+      seenUrls.add(src);
+      uniqueImages.push({ src, priority: i === 0 ? "high" : "low" });
+    }
+  });
 
   return (
     <>
-      {allImages.map(({ src, priority }) => (
+      {uniqueImages.map(({ src, priority }) => (
         <link
           key={src}
           rel="preload"
@@ -163,7 +178,7 @@ async function HeroSection({ imagesPromise }: { imagesPromise: Promise<string[]>
           as="image"
           href={src}
           // @ts-ignore
-          fetchpriority={i === 0 ? "high" : "low"}
+          fetchPriority={i === 0 ? "high" : "low"}
         />
       ))}
       <HeroSlider images={heroImages} />
@@ -208,7 +223,7 @@ async function FeaturedProducts({
           as="image"
           href={p.signedImageUrl}
           // @ts-ignore
-          fetchpriority={i === 0 ? "high" : "low"}
+          fetchPriority={i === 0 ? "high" : "low"}
         />
       ))}
       <ProductSlider products={products} />
@@ -237,9 +252,9 @@ export default function Home() {
 
   const featuredPromise = prisma.product
     .findMany({
-      where: { isActive: true },
+      where: { isActive: true, stationId: 1 },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 6,
+      take: 10,
     })
     .then((products) =>
       Promise.all(
