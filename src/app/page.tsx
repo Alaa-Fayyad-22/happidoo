@@ -7,6 +7,7 @@ import HeroSlider, { ProductSlider } from "@/components/HeroSlider";
 import { supabaseService } from "@/lib/supabase/service";
 
 import "./globals.css";
+import PackageSlider from "@/components/PackagesSlider";
 
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
 
@@ -252,9 +253,9 @@ export default function Home() {
 
   const featuredPromise = prisma.product
     .findMany({
-      where: { isActive: true, stationId: 1 },
+      where: { isActive: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 10,
+      take: 6,
     })
     .then((products) =>
       Promise.all(
@@ -315,6 +316,33 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Packages ── */}
+      <section className="relative">
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          {/* Header */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF8C00]/20 bg-[#FF8C00]/10 px-4 py-1.5 text-sm font-bold text-[#FF8C00]">
+              💰 Save More, Bounce More
+            </div>
+            <h2 className="mt-4 text-3xl font-bold text-slate-900 sm:text-4xl">
+              Package Deals
+            </h2>
+            <p className="mt-2 text-lg text-slate-600">
+              Rent multiple inflatables and unlock bigger discounts
+            </p>
+          </div>
+
+          {/* Package Slider - responsive grid on desktop, slider on mobile */}
+          <PackageSlider />
+
+          {/* Footer note */}
+          <p className="mt-8 text-center text-sm text-slate-500">
+            💬 Want a custom package? <Link href="/quote" className="font-semibold text-[#FF8C00] hover:underline">Contact us</Link> to build your perfect event
+          </p>
+        </div>
+      </section>
+
+      
       {/* ── How it works ── */}
       <section className="relative">
         <div className="mx-auto max-w-6xl px-4 py-10">
