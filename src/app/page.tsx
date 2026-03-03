@@ -253,9 +253,9 @@ export default function Home() {
 
   const featuredPromise = prisma.product
     .findMany({
-      where: { isActive: true },
+      where: {  isActive: true, stationId: 1 },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      take: 6,
+      take: 50,
     })
     .then((products) =>
       Promise.all(
