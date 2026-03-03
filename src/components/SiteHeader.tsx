@@ -255,11 +255,11 @@ export default function SiteHeader() {
 
                   // Fun gradient colors for each item
                   const gradients = [
-                    "from-blue-500 to-cyan-500",
-                    "from-purple-500 to-pink-500",
-                    "from-green-500 to-emerald-500",
                     "from-yellow-500 to-[#FF8C00]",
-                    "from-red-500 to-rose-500",
+                    "from-yellow-500 to-[#FF8C00]",
+                    "from-yellow-500 to-[#FF8C00]",
+                    "from-yellow-500 to-[#FF8C00]",
+                    "from-yellow-500 to-[#FF8C00]",
                   ];
 
                   return (
