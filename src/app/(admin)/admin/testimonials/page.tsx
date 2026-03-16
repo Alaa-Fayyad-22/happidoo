@@ -3,6 +3,10 @@ import AdminSidebar from "@/components/AdminSidebar";
 import { prisma } from "@/lib/prisma";
 import TestimonialsAdminClient from "./testimonialsAdminClient";
 
+
+export const dynamic = "force-dynamic";
+
+
 export default async function AdminTestimonialsPage() {
   const rawItems = await prisma.testimonial.findMany({
     where: {
