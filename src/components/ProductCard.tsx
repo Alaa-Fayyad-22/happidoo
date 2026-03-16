@@ -1,18 +1,34 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Product } from "@/lib/types";
 
+function getOptimizedImageUrl(url: string, width: number) {
+  // Supabase image transform API
+  // converts to webp and resizes in one request
+  return url.replace(
+    "/object/public/",
+    `/render/image/public/`
+  ) + `?width=${width}&format=webp&quality=80`;
+}
+
 export default function ProductCard({ product }: { product: Product }) {
+  const src = getOptimizedImageUrl(product.images[0], 800);
+
   return (
     <Link
       href={`/product/${product.slug}`}
       className="group rounded-3xl border bg-white p-4 shadow-sm transition hover:shadow-md"
     >
       <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
-        <img
-          src={product.images[0]}
+        <Image
+          src={src}
           alt={product.name}
+          width={800}
+          height={600}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-          loading="lazy"
+          fetchPriority="high"
+          // loading="lazy"
         />
       </div>
 

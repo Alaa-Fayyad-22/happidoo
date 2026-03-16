@@ -8,6 +8,9 @@ export default function Loading() {
     const html = document.documentElement;
     const body = document.body;
 
+    html.dataset.loading = "true";          // set a data attribute instead
+    
+
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
 

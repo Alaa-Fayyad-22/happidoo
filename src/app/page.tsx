@@ -128,7 +128,7 @@ async function ImagePreloader({
   heroImages.forEach((src, i) => {
     if (!seenUrls.has(src)) {
       seenUrls.add(src);
-      uniqueImages.push({ src, priority: i === 0 ? "high" : "low" });
+      uniqueImages.push({ src, priority: i === 0 ? "high" : "high" });
     }
   });
 
@@ -136,7 +136,7 @@ async function ImagePreloader({
   featuredUrls.forEach((src, i) => {
     if (!seenUrls.has(src)) {
       seenUrls.add(src);
-      uniqueImages.push({ src, priority: i === 0 ? "high" : "low" });
+      uniqueImages.push({ src, priority: i === 0 ? "high" : "high" });
     }
   });
 
@@ -179,7 +179,7 @@ async function HeroSection({ imagesPromise }: { imagesPromise: Promise<string[]>
           as="image"
           href={src}
           // @ts-ignore
-          fetchPriority={i === 0 ? "high" : "low"}
+          fetchPriority={i === 0 ? "high" : "high"}
         />
       ))}
       <HeroSlider images={heroImages} />
@@ -224,7 +224,7 @@ async function FeaturedProducts({
           as="image"
           href={p.signedImageUrl}
           // @ts-ignore
-          fetchPriority={i === 0 ? "high" : "low"}
+          fetchPriority={i === 0 ? "high" : "high"}
         />
       ))}
       <ProductSlider products={products} />
