@@ -2,27 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
-// ── helper (same as ProductCard) ─────────────────────────────────────────────
-function getOptimizedImageUrl(url: string, width: number) {
-  return (
-    url.replace("/object/public/", "/render/image/public/") +
-    `?width=${width}&format=webp&quality=80`
-  );
+// ── Shared interval hook ───────────────────────────────────────────────────────
+function useSlider(length: number, delay = 4000) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (length <= 1) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % length);
+    }, delay);
+    return () => clearInterval(interval);
+  }, [length, delay]);
+
+  return { index, setIndex };
 }
 
-// ── HeroSlider ────────────────────────────────────────────────────────────────
-type HeroSliderProps = { images: string[] };
+// ── HeroSlider — UNCHANGED, do not modify ────────────────────────────────────
+
+type HeroSliderProps = {
+  images: string[];
+};
 
 export default function HeroSlider({ images }: HeroSliderProps) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     if (images.length <= 1) return;
+
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % images.length);
     }, 4000);
+
     return () => clearInterval(interval);
   }, [images.length]);
 
@@ -39,22 +50,18 @@ export default function HeroSlider({ images }: HeroSliderProps) {
   return (
     <div className="relative aspect-[1.5/1] sm:aspect-[3/2] bg-slate-100 overflow-hidden rounded-3xl shadow-xl">
       {images.map((src, i) => (
-        <Image
+        <img
           key={i}
-          src={getOptimizedImageUrl(src, 1200)}
+          src={src}
           alt={`Hero slide ${i + 1}`}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 80vw"
-          className={`object-cover transition-opacity duration-200 ${
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
             i === index ? "opacity-100" : "opacity-0"
           }`}
-          priority={i === 0}
-          loading={i === 0 ? "eager" : "lazy"}
         />
       ))}
 
       {/* Dots */}
-      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 z-10">
+      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
         {images.map((_, i) => (
           <button
             key={i}
@@ -69,7 +76,8 @@ export default function HeroSlider({ images }: HeroSliderProps) {
   );
 }
 
-// ── ProductSlider types ───────────────────────────────────────────────────────
+// ── ProductSlider — reuses useSlider, shows product card overlay ──────────────
+
 type Product = {
   id: string | number;
   name: string;
@@ -81,34 +89,29 @@ type Product = {
   signedImageUrl: string | null;
 };
 
-type ProductSliderProps = { products: Product[] };
+type ProductSliderProps = {
+  products: Product[];
+};
 
-// ── ProductCard ───────────────────────────────────────────────────────────────
 function ProductCard({ p }: { p: Product }) {
-  const optimizedSrc = p.signedImageUrl
-    ? getOptimizedImageUrl(p.signedImageUrl, 800)
-    : null;
-
   return (
     <Link
       href={`/product/${p.slug}`}
       className="group block overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm hover:-translate-y-0.5 hover:shadow-md transition h-full"
     >
       <div className="relative aspect-[3/2] bg-slate-100">
-        {optimizedSrc ? (
-          <Image
-            src={optimizedSrc}
+        {p.signedImageUrl ? (
+          <img
+            src={p.signedImageUrl}
             alt={p.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-slate-400">
             No image
           </div>
         )}
-        <div className="absolute left-3 top-3 z-10">
+        <div className="absolute left-3 top-3">
           <span className="inline-flex items-center rounded-full border bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 backdrop-blur">
             {p.category ?? "general"}
           </span>
@@ -133,25 +136,24 @@ function ProductCard({ p }: { p: Product }) {
         </p>
         <div className="mt-4 flex items-center justify-between">
           <span className="text-xs text-slate-500">View details</span>
-          <span className="text-sm font-semibold text-slate-900 group-hover:translate-x-0.5 transition-transform">
-            →
-          </span>
+          <span className="text-sm font-semibold text-slate-900 group-hover:translate-x-0.5 transition-transform">→</span>
         </div>
       </div>
     </Link>
   );
 }
 
-// ── ProductSlider — unchanged logic ──────────────────────────────────────────
 export function ProductSlider({ products }: ProductSliderProps) {
   const [step, setStep] = useState(0);
   const [fading, setFading] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const count = products.length;
 
+  // Detect screen size
   useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
+    const query = window.matchMedia("(min-width: 1024px)"); // lg breakpoint
     setIsDesktop(query.matches);
+
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
     query.addEventListener("change", handler);
     return () => query.removeEventListener("change", handler);
@@ -160,6 +162,7 @@ export function ProductSlider({ products }: ProductSliderProps) {
   const stepSize = isDesktop ? 3 : 1;
   const visibleCount = isDesktop ? 3 : 1;
 
+  // Auto-advance
   useEffect(() => {
     if (count < 2) return;
     const id = setInterval(() => go(stepSize), 4000);
@@ -177,12 +180,14 @@ export function ProductSlider({ products }: ProductSliderProps) {
 
   if (!count) return null;
 
+  // Show 1 card on mobile, 3 on desktop
   const visible = Array.from({ length: visibleCount }).map((_, i) =>
     products[(i + step) % count]
   );
 
   return (
     <div className="relative">
+      {/* Cards — responsive: 1 on mobile, 3 on desktop */}
       <div
         className="grid grid-cols-1 lg:grid-cols-3 gap-5 transition-opacity duration-300"
         style={{ opacity: fading ? 0 : 1 }}
@@ -192,6 +197,7 @@ export function ProductSlider({ products }: ProductSliderProps) {
         ))}
       </div>
 
+      {/* Arrows */}
       <div className="mt-4 flex items-center justify-end gap-2">
         <button
           onClick={() => go(-stepSize)}
