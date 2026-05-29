@@ -4,6 +4,17 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { supabaseService } from "@/lib/supabase/service";
 
+import { unstable_cache } from "next/cache";
+
+const getProducts = unstable_cache(
+  async () => prisma.product.findMany({
+    where: { isActive: true, stationId: 1 },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+  }),
+  ["products"],
+  { revalidate: 60 }
+);
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
