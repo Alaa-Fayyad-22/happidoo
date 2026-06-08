@@ -61,8 +61,8 @@ jobs:
           ADMIN_NOTIFY_TO: ${{ secrets.ADMIN_NOTIFY_TO }}
           NEXT_PUBLIC_WHATSAPP_NUMBER: ${{ secrets.NEXT_PUBLIC_WHATSAPP_NUMBER }}
 
-      - name: Docker build
-        run: docker build -t inflatables-site .
+      # - name: Docker build
+      #   run: docker build -t inflatables-site .
 
       - name: Deploy to Vercel
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
