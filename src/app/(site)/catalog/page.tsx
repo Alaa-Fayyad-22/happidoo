@@ -65,7 +65,7 @@ function ProductCard({ p }: { p: ProductRow & { signedImageUrl: string | null } 
             src={p.signedImageUrl}
             alt={p.name}
             fill
-            priority
+            fetchPriority="high"
             sizes="(max-width: 768px) 100vw, 33vw"
             decoding="async"
             className="object-cover object-center transition group-hover:scale-105"
