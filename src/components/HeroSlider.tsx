@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 // ── Shared interval hook ───────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ export default function HeroSlider({ images }: HeroSliderProps) {
   return (
     <div className="relative aspect-[1.5/1] sm:aspect-[3/2] bg-slate-100 overflow-hidden rounded-3xl shadow-xl">
       {images.map((src, i) => (
-        <img
+        <Image
           key={i}
           src={src}
           alt={`Hero slide ${i + 1}`}
@@ -101,7 +102,7 @@ function ProductCard({ p }: { p: Product }) {
     >
       <div className="relative aspect-[3/2] bg-slate-100">
         {p.signedImageUrl ? (
-          <img
+          <Image
             src={p.signedImageUrl}
             alt={p.name}
             className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
