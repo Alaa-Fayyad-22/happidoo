@@ -9,6 +9,7 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY prisma ./prisma 
 RUN npm ci
 
 # 2. Build the app
