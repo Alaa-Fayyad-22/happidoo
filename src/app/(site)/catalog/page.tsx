@@ -1,4 +1,5 @@
 // src/app/(site)/catalog/page.tsx
+//fetch
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
