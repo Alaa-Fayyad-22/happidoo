@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
@@ -950,9 +951,10 @@ function ProductPicker({
                             <div className="h-28 w-28 overflow-hidden rounded-xl border bg-slate-50 shrink-0">
                               {p.imagePath ? (
                                 signed[p.slug] ? (
-                                  <img
+                                  <Image
                                     src={signed[p.slug]}
                                     alt={p.name}
+                                    fetchPriority="high"
                                     className="h-full w-full object-cover"
                                     loading="lazy"
                                     referrerPolicy="no-referrer"

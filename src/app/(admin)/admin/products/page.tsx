@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import AdminSidebar from "@/components/AdminSidebar";
 
 type Product = {
@@ -370,7 +371,7 @@ export default function AdminProductsPage() {
                   <div className="w-20 h-16 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
                     {imgUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={imgUrl} alt={p.name} className="w-full h-full object-cover" />
+                      <Image src={imgUrl} fetchPriority="high" alt={p.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs text-gray-400">No image</span>
                     )}
@@ -571,9 +572,10 @@ export default function AdminProductsPage() {
                 <div className="w-28 h-20 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
                   {form.imagePath && signedUrlMap[form.imagePath] ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={signedUrlMap[form.imagePath]}
                       alt="Preview"
+                      fetchPriority="high"
                       className="w-full h-full object-cover"
                     />
                   ) : (

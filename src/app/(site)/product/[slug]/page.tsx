@@ -1,4 +1,5 @@
 // src/app/(site)/product/[slug]/page.tsx
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -68,9 +69,10 @@ export default async function ProductPage({ params }: Props) {
         <section className="overflow-hidden rounded-3xl border bg-white shadow-sm relative">
           {signedImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={signedImageUrl}
               alt={product.name}
+              fetchPriority="high"
               className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
