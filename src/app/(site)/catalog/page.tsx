@@ -1,4 +1,5 @@
 // src/app/(site)/catalog/page.tsx
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
@@ -59,14 +60,14 @@ function ProductCard({ p }: { p: ProductRow & { signedImageUrl: string | null } 
     >
       <div className="relative aspect-[1.5/1] sm:aspect-[3/2] bg-slate-100">
         {p.signedImageUrl ? (
-          <img
+          <Image
             src={p.signedImageUrl}
             alt={p.name}
-            // First few images are above the fold — load eagerly
-            loading="eager"
-            fetchPriority="high"
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 33vw"
             decoding="async"
-            className="h-full w-full object-cover object-center transition group-hover:scale-105"
+            className="object-cover object-center transition group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-slate-400">
