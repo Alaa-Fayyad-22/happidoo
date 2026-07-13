@@ -954,7 +954,8 @@ function ProductPicker({
                                   <Image
                                     src={signed[p.slug]}
                                     alt={p.name}
-                                    fetchPriority="high"
+                                    width={112}
+                                    height={112}
                                     className="h-full w-full object-cover"
                                     loading="lazy"
                                     referrerPolicy="no-referrer"

@@ -370,8 +370,14 @@ export default function AdminProductsPage() {
                   
                   <div className="w-20 h-16 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
                     {imgUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <Image src={imgUrl} fetchPriority="high" alt={p.name} className="w-full h-full object-cover" />
+                      // Intrinsic size matches the w-20 h-16 box; Next emits a 2x srcset.
+                      <Image
+                        src={imgUrl}
+                        alt={p.name}
+                        width={80}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <span className="text-xs text-gray-400">No image</span>
                     )}
@@ -571,11 +577,12 @@ export default function AdminProductsPage() {
               <div className="flex items-start gap-4">
                 <div className="w-28 h-20 rounded-md bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
                   {form.imagePath && signedUrlMap[form.imagePath] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                    // Intrinsic size matches the w-28 h-20 box.
                     <Image
                       src={signedUrlMap[form.imagePath]}
                       alt="Preview"
-                      fetchPriority="high"
+                      width={112}
+                      height={80}
                       className="w-full h-full object-cover"
                     />
                   ) : (

@@ -55,8 +55,10 @@ export default function HeroSlider({ images }: HeroSliderProps) {
           key={i}
           src={src}
           alt={`Hero slide ${i + 1}`}
-          fetchPriority="high"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+          fill
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          priority={i === 0}
+          className={`object-cover transition-opacity duration-200 ${
             i === index ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -106,8 +108,9 @@ function ProductCard({ p }: { p: Product }) {
           <Image
             src={p.signedImageUrl}
             alt={p.name}
-            fetchPriority="high"
-            className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-slate-400">

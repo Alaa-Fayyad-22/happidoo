@@ -68,13 +68,18 @@ export default async function ProductPage({ params }: Props) {
         {/* Image */}
         <section className="overflow-hidden rounded-3xl border bg-white shadow-sm relative">
           {signedImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <Image
-              src={signedImageUrl}
-              alt={product.name}
-              fetchPriority="high"
-              className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            />
+            // Matches the aspect ratio of the "No image" fallback below, so the
+            // fill image has a sized parent to fill and the layout doesn't shift.
+            <div className="relative aspect-[7/4] sm:aspect-[5/3]">
+              <Image
+                src={signedImageUrl}
+                alt={product.name}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
           ) : (
             <div className="relative aspect-[7/4] sm:aspect-[5/3] bg-slate-100 flex items-center justify-center text-xs text-slate-400">
               No image
