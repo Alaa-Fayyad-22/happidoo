@@ -2,8 +2,23 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { testimonialInput } from "@/lib/validators";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
+  const hdrs = await headers();
+  const clientIp =
+    hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    hdrs.get("x-real-ip") ||
+    "unknown";
+
+  const rl = rateLimit(`testimonial:${clientIp}`, 5, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
 
   try {
@@ -27,13 +42,8 @@ export async function POST(req: Request) {
     return new NextResponse(null, { status: 204 });
   }
 
-  const h = await headers();
-  const ip =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    h.get("x-real-ip") ??
-    null;
-
-  const userAgent = h.get("user-agent");
+  const ip = clientIp === "unknown" ? null : clientIp;
+  const userAgent = hdrs.get("user-agent");
 
   // Normalize empty strings to null (clean DB)
   const clean = (s?: string) => {

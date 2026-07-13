@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { revalidateTag, revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 
 function jsonError(message: string, status = 400, extra?: Record<string, unknown>) {
@@ -75,9 +77,15 @@ function toStationId(v: unknown): number {
 
 
 export async function PATCH(req: Request, ctx: Ctx) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const id = await getId(ctx);
   if (!id) return jsonError("Missing product id", 400);
-  
+
 
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) return jsonError("Product not found", 404);
@@ -130,6 +138,12 @@ export async function PATCH(req: Request, ctx: Ctx) {
 }
 
 export async function DELETE(_req: Request, ctx: Ctx) {
+  const csrf = checkOrigin(_req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const id = await getId(ctx);
   if (!id) return jsonError("Missing product id", 400);
 

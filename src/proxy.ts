@@ -1,12 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+/**
+ * Fail-closed: an unset/empty ADMIN_EMAILS allows nobody, not everybody.
+ * Mirrors isAdminEmail in @/lib/auth, which the proxy cannot import because
+ * that module is server-only.
+ */
 function isAdminEmail(email: string | null | undefined) {
   const allow = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
 
+  if (allow.length === 0) return false;
   return !!email && allow.includes(email.toLowerCase());
 }
 
@@ -54,16 +60,15 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // // Logged in, but not allowed admin email
-  // if (!isAdminEmail(user.email)) {
-  //   if (isAdminApi) {
-  //     return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
-  //   }
-  //   // For pages, redirect away (or you could show a 403 page)
-  //   const url = req.nextUrl.clone();
-  //   url.pathname = "/";
-  //   return NextResponse.redirect(url);
-  // }
+  // Logged in, but not an allowed admin email
+  if (!isAdminEmail(user.email)) {
+    if (isAdminApi) {
+      return NextResponse.json({ ok: false, message: "Forbidden" }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
 
   return res;
 }

@@ -3,9 +3,21 @@
 import { prisma } from "@/lib/prisma";
 import { uploadProductImage, deleteProductImage } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
+
+/**
+ * Server Actions are publicly reachable POST endpoints once they are reachable
+ * from the module graph, so each one must authorize independently.
+ */
+async function assertAdmin() {
+  const gate = await requireAdmin();
+  if (!gate.ok) throw new Error("Unauthorized");
+}
 
 // ─── CREATE ───────────────────────────────────────────────────
 export async function createProduct(formData: FormData) {
+  await assertAdmin();
+
   const file = formData.get("image") as File | null;
   const name = formData.get("name") as string;
   const slug = formData.get("slug") as string;
@@ -37,6 +49,8 @@ export async function updateProduct(
   productId: string,
   formData: FormData
 ) {
+  await assertAdmin();
+
   const file = formData.get("image") as File | null;
   const name = formData.get("name") as string;
   // ...other fields
@@ -72,6 +86,8 @@ export async function updateProduct(
 
 // ─── DELETE ───────────────────────────────────────────────────
 export async function deleteProduct(productId: string) {
+  await assertAdmin();
+
   const existing = await prisma.product.findUnique({
     where: { id: productId },
   });

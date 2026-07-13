@@ -1,6 +1,7 @@
 // src/app/api/admin/leads/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
 
 type LeadRow = {
   id: string;
@@ -23,6 +24,9 @@ type LeadRow = {
 };
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const leads = (await prisma.lead.findMany({
     orderBy: { createdAt: "desc" },
   })) as LeadRow[];

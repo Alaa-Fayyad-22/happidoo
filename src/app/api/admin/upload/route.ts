@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import { supabaseService } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
+
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const ALLOWED: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 function safeExt(name: string) {
   const m = name.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/);
@@ -9,6 +20,12 @@ function safeExt(name: string) {
 }
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const form = await req.formData();
   const file = form.get("file");
 
@@ -24,22 +41,36 @@ export async function POST(req: Request) {
     );
   }
 
-  const bucket = "products"; // ✅ change to your actual Supabase bucket name
+  if (file.size === 0) {
+    return NextResponse.json({ ok: false, message: "Empty file" }, { status: 400 });
+  }
+
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json(
+      { ok: false, message: "File too large (max 5 MB)" },
+      { status: 413 }
+    );
+  }
+
+  // Pin the stored content type to the validated extension. Trusting file.type
+  // would let a caller store an object as text/html and have the bucket serve
+  // it back as a script.
+  const contentType = ALLOWED[ext];
+
+  const bucket = "products";
   const id = crypto.randomUUID();
   const objectPath = `products/${id}.${ext}`;
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   const { data, error } = await supabaseService.storage.from(bucket).upload(objectPath, bytes, {
-    contentType: file.type || `image/${ext}`,
+    contentType,
     upsert: false,
   });
 
   if (error) {
-    return NextResponse.json(
-      { ok: false, message: "Supabase upload error", details: error.message },
-      { status: 400 }
-    );
+    console.error("Supabase upload error:", error.message);
+    return NextResponse.json({ ok: false, message: "Upload failed" }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, path: data?.path ?? objectPath }, { status: 200 });

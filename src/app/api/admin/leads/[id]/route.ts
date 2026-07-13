@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { updateLead } from "@/lib/leadsStore";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 const PatchSchema = z
   .object({
@@ -13,6 +15,12 @@ const PatchSchema = z
 type Ctx = { params: { id: string } } | { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   // ✅ Works whether params is sync OR Promise (Next.js 16 can be either)
   const resolved = await Promise.resolve((ctx as any).params);
   const id = ((resolved?.id as string) || "").trim();

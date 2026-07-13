@@ -1,6 +1,8 @@
 // src/app/api/admin/testimonials/[id]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -25,6 +27,12 @@ export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const { id } = await context.params;
 
   if (!id) return jsonError("id is required", 400);
@@ -66,6 +74,12 @@ export async function DELETE(
   _req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const csrf = checkOrigin(_req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const { id } = await context.params;
 
   if (!id) return jsonError("id is required", 400);

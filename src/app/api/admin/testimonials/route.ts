@@ -1,6 +1,8 @@
 // src/app/api/admin/testimonials/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 function jsonError(message: string, status = 400, extra?: Record<string, unknown>) {
   return NextResponse.json({ error: message, ...(extra ?? {}) }, { status });
@@ -34,6 +36,9 @@ function toBool(v: unknown, defaultValue: boolean): boolean {
  * - all:     no filter
  */
 export async function GET(req: Request) {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const url = new URL(req.url);
 
   const status = (toStr(url.searchParams.get("status")) || "pending").toLowerCase();
@@ -68,6 +73,12 @@ export async function GET(req: Request) {
  * body: { rating, message?, name?, city?, source?, isApproved?, isHidden? }
  */
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   let body: any;
   try {
     body = await req.json();

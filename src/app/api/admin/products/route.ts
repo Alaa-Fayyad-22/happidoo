@@ -1,6 +1,8 @@
 // src/app/api/admin/products/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 
 function jsonError(message: string, status = 400, extra?: Record<string, unknown>) {
@@ -72,6 +74,9 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const products = await prisma.product.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
@@ -79,6 +84,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   let body: any;
   try {
     body = await req.json();

@@ -1,6 +1,8 @@
 // src/app/api/admin/leads/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth";
+import { checkOrigin } from "@/lib/security";
 
 const AllowedStatus = ["new", "contacted", "booked", "closed"] as const;
 type LeadStatus = (typeof AllowedStatus)[number];
@@ -43,6 +45,12 @@ export async function PATCH(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> | { id: string } }
 ) {
+  const csrf = checkOrigin(req);
+  if (csrf) return csrf;
+
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate.response;
+
   const p =
     typeof (ctx.params as any)?.then === "function"
       ? await (ctx.params as Promise<{ id: string }>)

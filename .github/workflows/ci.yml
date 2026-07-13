@@ -40,8 +40,19 @@ jobs:
       # - name: Test
       #   run: npm run test
 
-      - name: Security audit
-        run: npm audit --audit-level=high
+      # Blocking gate: anything high/critical that actually ships to production.
+      # Dev-only advisories are excluded here so a vulnerability in a build tool
+      # cannot block a deploy; they are still surfaced by the report step below.
+      - name: Security audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      # Visibility only: full tree including devDependencies. Never fails the
+      # build, so it cannot block unnecessarily, but the findings stay visible
+      # in the job log instead of being silently swallowed.
+      - name: Security audit (full report, non-blocking)
+        if: always()
+        continue-on-error: true
+        run: npm audit
 
       - name: Build
         run: npm run build
