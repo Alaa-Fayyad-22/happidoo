@@ -114,21 +114,26 @@ export async function POST(req: Request) {
   // slug derived from name (unique)
   const slug = await uniqueSlug(name);
 
-  const created = await prisma.product.create({
-    data: {
-      name,
-      slug,
-      category,
-      stationId,
-      priceFrom,
-      size,
-      features,
-      description,
-      imagePath,
-      isActive,
-      sortOrder,
-    },
-  });
+  try {
+    const created = await prisma.product.create({
+      data: {
+        name,
+        slug,
+        category,
+        stationId,
+        priceFrom,
+        size,
+        features,
+        description,
+        imagePath,
+        isActive,
+        sortOrder,
+      },
+    });
 
-  return NextResponse.json({ product: created }, { status: 201 });
+    return NextResponse.json({ product: created }, { status: 201 });
+  } catch (err) {
+    console.error("[admin/products] create failed:", err);
+    return jsonError("Failed to create product", 500);
+  }
 }

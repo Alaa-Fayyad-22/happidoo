@@ -126,7 +126,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return jsonError("No valid fields provided to update", 400);
   }
 
-  const updated = await prisma.product.update({ where: { id }, data });
+  let updated;
+  try {
+    updated = await prisma.product.update({ where: { id }, data });
+  } catch (err) {
+    console.error("[admin/products] update failed:", err);
+    return jsonError("Failed to update product", 500);
+  }
 
   revalidateTag("product-signed-url", "max");
 
@@ -150,7 +156,13 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const existing = await prisma.product.findUnique({ where: { id }, select: { id: true } });
   if (!existing) return jsonError("Product not found", 404);
 
-  await prisma.product.delete({ where: { id } });
+  try {
+    await prisma.product.delete({ where: { id } });
+  } catch (err) {
+    console.error("[admin/products] delete failed:", err);
+    return jsonError("Failed to delete product", 500);
+  }
+
   revalidateTag("product-signed-url", "max");
   revalidatePath("/");
   revalidatePath("/catalog");

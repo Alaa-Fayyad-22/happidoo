@@ -83,15 +83,23 @@ export async function PATCH(
     return NextResponse.json({ ok: false, message: "No fields to update." }, { status: 400 });
   }
 
-  const lead = await prisma.lead.update({
-    where: { id },
-    data: {
-      ...(status !== undefined ? { status } : {}),
-      ...(notes !== undefined ? { notes } : {}),
-    },
-  });
+  try {
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: {
+        ...(status !== undefined ? { status } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+      },
+    });
 
-  const enriched = await enrichLead(lead);
+    const enriched = await enrichLead(lead);
 
-  return NextResponse.json({ ok: true, lead: enriched }, { status: 200 });
+    return NextResponse.json({ ok: true, lead: enriched }, { status: 200 });
+  } catch (err) {
+    console.error("[admin/leads] update failed:", err);
+    return NextResponse.json(
+      { ok: false, message: "Failed to update lead." },
+      { status: 500 }
+    );
+  }
 }

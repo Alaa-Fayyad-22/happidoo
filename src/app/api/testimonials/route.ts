@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     hdrs.get("x-real-ip") ||
     "unknown";
 
-  const rl = rateLimit(`testimonial:${clientIp}`, 5, 60_000);
+  const rl = await rateLimit(`testimonial:${clientIp}`, 5, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Too many requests. Try again in a minute." },
@@ -51,17 +51,25 @@ export async function POST(req: Request) {
     return t ? t : null;
   };
 
-  await prisma.testimonial.create({
-    data: {
-      rating,
-      message: clean(message),
-      name: clean(name),
-      city: clean(city),
-      ip,
-      userAgent,
-      isApproved: false, // admin approves later
-    },
-  });
+  try {
+    await prisma.testimonial.create({
+      data: {
+        rating,
+        message: clean(message),
+        name: clean(name),
+        city: clean(city),
+        ip,
+        userAgent,
+        isApproved: false, // admin approves later
+      },
+    });
+  } catch (err) {
+    console.error("[testimonials] failed to save testimonial:", err);
+    return NextResponse.json(
+      { error: "We couldn't save your review. Please try again." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

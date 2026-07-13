@@ -97,17 +97,22 @@ export async function POST(req: Request) {
   const isApproved = toBool(body?.isApproved, false);
   const isHidden = toBool(body?.isHidden, false);
 
-  const created = await prisma.testimonial.create({
-    data: {
-      rating,
-      message,
-      name,
-      city,
-      source,
-      isApproved,
-      isHidden,
-    },
-  });
+  try {
+    const created = await prisma.testimonial.create({
+      data: {
+        rating,
+        message,
+        name,
+        city,
+        source,
+        isApproved,
+        isHidden,
+      },
+    });
 
-  return NextResponse.json({ item: created }, { status: 201 });
+    return NextResponse.json({ item: created }, { status: 201 });
+  } catch (err) {
+    console.error("[admin/testimonials] create failed:", err);
+    return jsonError("Failed to create testimonial", 500);
+  }
 }
