@@ -4,21 +4,12 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import HeroSlider, { ProductSlider } from "@/components/HeroSlider";
-import { supabaseService } from "@/lib/supabase/service";
+import { signProductImage, IMAGE_WIDTH } from "@/lib/images";
 
 import "./globals.css";
 import PackageSlider from "@/components/PackagesSlider";
 
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
-
-async function signProductImage(path: string): Promise<string | null> {
-  if (!path) return null;
-  const { data, error } = await supabaseService.storage
-    .from("products")
-    .createSignedUrl(path, 60 * 60);
-  if (error) { console.error("Sign error:", error); return null; }
-  return data?.signedUrl ?? null;
-}
 
 // ── Static UI pieces ──────────────────────────────────────────────────────────
 
@@ -101,61 +92,6 @@ function FeaturedProductsSkeleton() {
   );
 }
 
-/**
- * Renders nothing visible — only <link rel="preload"> tags.
- * Lives in its own <Suspense> so it streams preload hints the instant
- * both promises resolve, independently of the visible UI components.
- * This means the browser starts fetching images while loading.tsx is still shown.
- */
-async function ImagePreloader({
-  heroPromise,
-  featuredPromise,
-}: {
-  heroPromise: Promise<string[]>;
-  featuredPromise: Promise<(ProductRow & { signedImageUrl: string | null })[]>;
-}) {
-  const [heroImages, featured] = await Promise.all([heroPromise, featuredPromise]);
-  const featuredUrls = featured
-    .slice(0, 3)
-    .map((p) => p.signedImageUrl)
-    .filter(Boolean) as string[];
-
-  // Deduplicate URLs — same image might be in both hero and featured
-  const seenUrls = new Set<string>();
-  const uniqueImages: Array<{ src: string; priority: string }> = [];
-
-  // Add hero images first (they get high priority for index 0)
-  heroImages.forEach((src, i) => {
-    if (!seenUrls.has(src)) {
-      seenUrls.add(src);
-      uniqueImages.push({ src, priority: i === 0 ? "high" : "high" });
-    }
-  });
-
-  // Add featured images that aren't already in hero
-  featuredUrls.forEach((src, i) => {
-    if (!seenUrls.has(src)) {
-      seenUrls.add(src);
-      uniqueImages.push({ src, priority: i === 0 ? "high" : "high" });
-    }
-  });
-
-  return (
-    <>
-      {uniqueImages.map(({ src, priority }) => (
-        <link
-          key={src}
-          rel="preload"
-          as="image"
-          href={src}
-          // @ts-ignore
-          fetchPriority={priority}
-        />
-      ))}
-    </>
-  );
-}
-
 // ── Async server components — receive pre-kicked promises ─────────────────────
 
 /**
@@ -166,25 +102,11 @@ async function ImagePreloader({
 async function HeroSection({ imagesPromise }: { imagesPromise: Promise<string[]> }) {
   const heroImages = await imagesPromise;
 
-  return (
-    <>
-      {/* Preload ALL hero images the moment URLs are signed —
-          this fires while loading.tsx is still visible, so images
-          are already in cache when the slider mounts.
-          First = high priority (shown immediately), rest = low (background fetch). */}
-      {heroImages.map((src, i) => (
-        <link
-          key={src}
-          rel="preload"
-          as="image"
-          href={src}
-          // @ts-ignore
-          fetchPriority={i === 0 ? "high" : "high"}
-        />
-      ))}
-      <HeroSlider images={heroImages} />
-    </>
-  );
+  // Only the first slide is preloaded (HeroSlider marks it `priority`, which
+  // emits the preload). Preloading every slide + every card at once fired ~40
+  // parallel image fetches on first paint, which is what overwhelmed the
+  // fetching path and produced the 500s.
+  return <HeroSlider images={heroImages} />;
 }
 
 async function FeaturedProducts({
@@ -213,23 +135,7 @@ async function FeaturedProducts({
     signedImageUrl: p.signedImageUrl,
   }));
 
-  return (
-    <>
-      {/* Preload the first 3 featured images (the ones visible on load).
-          Fires as soon as signing resolves — while loading.tsx may still be up. */}
-      {products.slice(0, 3).map((p, i) => p.signedImageUrl && (
-        <link
-          key={p.signedImageUrl}
-          rel="preload"
-          as="image"
-          href={p.signedImageUrl}
-          // @ts-ignore
-          fetchPriority={i === 0 ? "high" : "high"}
-        />
-      ))}
-      <ProductSlider products={products} />
-    </>
-  );
+  return <ProductSlider products={products} />;
 }
 
 // ── Page — kicks off ALL async work immediately, awaits nothing ───────────────
@@ -247,7 +153,7 @@ export default function Home() {
       select: { imagePath: true }, // only fetch what we need
     })
     .then((rows) =>
-      Promise.all(rows.map((p) => (p.imagePath ? signProductImage(p.imagePath) : null)))
+      Promise.all(rows.map((p) => signProductImage(p.imagePath, IMAGE_WIDTH.hero)))
     )
     .then((urls) => urls.filter(Boolean) as string[]);
 
@@ -261,22 +167,13 @@ export default function Home() {
       Promise.all(
         products.map(async (p) => ({
           ...p,
-          signedImageUrl: p.imagePath ? await signProductImage(p.imagePath) : null,
+          signedImageUrl: await signProductImage(p.imagePath, IMAGE_WIDTH.card),
         }))
       )
     );
 
   return (
     <main className="relative overflow-hidden">
-      {/* ── Image preloader — no visible UI, just <link rel="preload"> tags.
-              Streams into <head> the instant signing resolves, while
-              loading.tsx may still be visible. Gives browser a head start. ── */}
-      <Suspense fallback={null}>
-        <ImagePreloader
-          heroPromise={heroImagesPromise}
-          featuredPromise={featuredPromise}
-        />
-      </Suspense>
       {/* ── Hero ── */}
       <section className="relative">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-2 lg:items-center">

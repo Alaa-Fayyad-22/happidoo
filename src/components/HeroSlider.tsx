@@ -58,6 +58,9 @@ export default function HeroSlider({ images }: HeroSliderProps) {
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
           priority={i === 0}
+          loading={i === 0 ? undefined : "lazy"}
+          // Pre-resized + WebP-encoded by Supabase at signing time.
+          unoptimized
           className={`object-cover transition-opacity duration-200 ${
             i === index ? "opacity-100" : "opacity-0"
           }`}
@@ -110,6 +113,7 @@ function ProductCard({ p }: { p: Product }) {
             alt={p.name}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
+            unoptimized
             className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (

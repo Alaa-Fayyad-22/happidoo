@@ -2,38 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-
-type SignedUrlResp = { url: string };
-
-async function getBaseUrlFromHeaders() {
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  if (!host) return null;
-  return `${proto}://${host}`;
-}
-
-async function signProductImage(path?: string): Promise<string | null> {
-  const trimmed = path?.trim();
-  if (!trimmed) return null;
-
-  const base = await getBaseUrlFromHeaders();
-  if (!base) return null;
-
-  try {
-    const res = await fetch(
-      `${base}/api/image/product?path=${encodeURIComponent(trimmed)}`,
-      { method: "GET", cache: "no-store" }
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as SignedUrlResp;
-    return data?.url ?? null;
-  } catch {
-    return null;
-  }
-}
+import { signProductImage, IMAGE_WIDTH } from "@/lib/images";
 
 type Params = { slug: string };
 type Props = { params: Params | Promise<Params> };
@@ -45,7 +15,7 @@ export default async function ProductPage({ params }: Props) {
   const product = await prisma.product.findUnique({ where: { slug } });
   if (!product?.isActive) notFound();
 
-  const signedImageUrl = await signProductImage(product.imagePath);
+  const signedImageUrl = await signProductImage(product.imagePath, IMAGE_WIDTH.hero);
 
   const featuresList = (product.features || "")
     .split(/\r?\n|,/)
@@ -77,6 +47,7 @@ export default async function ProductPage({ params }: Props) {
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
+                unoptimized
                 className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
               />
             </div>

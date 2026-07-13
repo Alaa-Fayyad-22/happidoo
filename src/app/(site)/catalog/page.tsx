@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { supabaseService } from "@/lib/supabase/service";
+import { signProductImage, IMAGE_WIDTH } from "@/lib/images";
 
 import { unstable_cache } from "next/cache";
 
@@ -21,22 +21,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
-
-// ── Sign directly via Supabase SDK — no self-fetch, no header dependency ──────
-async function signProductImage(path: string): Promise<string | null> {
-  const p = (path || "").trim();
-  if (!p) return null;
-
-  const { data, error } = await supabaseService.storage
-    .from("products")
-    .createSignedUrl(p, 60 * 60); // 1 hour
-
-  if (error) {
-    console.error("Catalog sign error:", error);
-    return null;
-  }
-  return data?.signedUrl ?? null;
-}
 
 // ── Tab helper ────────────────────────────────────────────────────────────────
 const tabClass = (active: boolean, theme?: "bounce" | "snack") => {
@@ -65,9 +49,11 @@ function ProductCard({ p }: { p: ProductRow & { signedImageUrl: string | null } 
             src={p.signedImageUrl}
             alt={p.name}
             fill
-            fetchPriority="high"
             sizes="(max-width: 768px) 100vw, 33vw"
             decoding="async"
+            // Supabase already resized + WebP-encoded this at the edge; sending
+            // it through Next's optimizer would re-fetch the full-size PNG.
+            unoptimized
             className="object-cover object-center transition group-hover:scale-105"
           />
         ) : (
@@ -179,7 +165,7 @@ export default async function CatalogPage({
       Promise.all(
         products.map(async (p) => ({
           ...p,
-          signedImageUrl: p.imagePath ? await signProductImage(p.imagePath) : null,
+          signedImageUrl: await signProductImage(p.imagePath, IMAGE_WIDTH.card),
         }))
       )
     );

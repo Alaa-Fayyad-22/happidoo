@@ -45,6 +45,12 @@ const nextConfig: NextConfig = {
         hostname: "kffoevhciytnvjvnlpxp.supabase.co",
         pathname: "/storage/v1/object/sign/**",
       },
+      // Signed + edge-transformed product images (what the site actually serves).
+      {
+        protocol: "https",
+        hostname: "kffoevhciytnvjvnlpxp.supabase.co",
+        pathname: "/storage/v1/render/image/sign/**",
+      },
     ],
   },
 };
