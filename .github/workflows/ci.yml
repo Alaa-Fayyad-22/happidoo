@@ -79,5 +79,5 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes
         env:
-          # VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
