@@ -85,7 +85,7 @@ export default function SiteFooter() {
                   rel="noopener noreferrer"
                   className="font-medium text-slate-900 underline-offset-4 hover:text-slate-700"
                 >
-                  +{phone}
+                  +961 71 319 079
                 </a>
               </div>
               <div>
