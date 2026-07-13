@@ -1,5 +1,5 @@
 // lib/storage.ts
-import { supabaseService } from "@/lib/supabase/service";
+import { getSupabaseService } from "@/lib/supabase/service";
 
 export async function uploadProductImage(
   file: File,
@@ -8,7 +8,7 @@ export async function uploadProductImage(
   const ext = file.name.split(".").pop();
   const filePath = `products/${slug}-${Date.now()}.${ext}`;
 
-  const { error } = await supabaseService.storage
+  const { error } = await getSupabaseService().storage
     .from("products")
     .upload(filePath, file, {
       cacheControl: "3600",
@@ -23,7 +23,7 @@ export async function uploadProductImage(
 export async function deleteProductImage(imagePath: string): Promise<void> {
   if (!imagePath) return;
 
-  const { error } = await supabaseService.storage
+  const { error } = await getSupabaseService().storage
     .from("products")
     .remove([imagePath]);
 

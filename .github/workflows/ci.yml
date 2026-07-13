@@ -72,12 +72,19 @@ jobs:
           ADMIN_NOTIFY_TO: ${{ secrets.ADMIN_NOTIFY_TO }}
           NEXT_PUBLIC_WHATSAPP_NUMBER: ${{ secrets.NEXT_PUBLIC_WHATSAPP_NUMBER }}
 
-      - name: Docker build
-        run: docker build -t inflatables-site .
+      # - name: Docker build
+      #   run: |
+      #     docker build -t inflatables-site \
+      #       --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+      #       --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+      #       --build-arg NEXT_PUBLIC_WHATSAPP_NUMBER="${{ secrets.NEXT_PUBLIC_WHATSAPP_NUMBER }}" \
+      #       --build-arg DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+      #       --build-arg DIRECT_URL="${{ secrets.DIRECT_URL }}" \
+      #       .
 
-      - name: Deploy to Vercel
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # - name: Deploy to Vercel
+      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      #   run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --yes
+      #   env:
+      #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

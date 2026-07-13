@@ -1,6 +1,6 @@
 // src/lib/images.ts
 import { unstable_cache } from "next/cache";
-import { supabaseService } from "@/lib/supabase/service";
+import { getSupabaseService } from "@/lib/supabase/service";
 
 const BUCKET = "products";
 const SIGNED_URL_TTL = 60 * 60 * 2; // 2h — token lifetime
@@ -27,7 +27,7 @@ export const IMAGE_WIDTH = {
  * what was blowing past its 7s upstream-fetch abort and returning 500s.
  */
 async function sign(path: string, width: number): Promise<string | null> {
-  const { data, error } = await supabaseService.storage
+  const { data, error } = await getSupabaseService().storage
     .from(BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL, {
       transform: { width, resize: "contain", quality: 75 },

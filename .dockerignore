@@ -1,0 +1,15 @@
+node_modules
+.next
+npm-debug.log
+
+# Never bake secrets into image layers. Build-time values arrive via --build-arg.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+__tests__
+README.md
+Dockerfile
+.dockerignore

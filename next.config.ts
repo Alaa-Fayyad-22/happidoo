@@ -20,6 +20,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Emits .next/standalone, which the Dockerfile's runner stage copies.
+  output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

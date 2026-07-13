@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabase/service";
+import { getSupabaseService } from "@/lib/supabase/service";
 import { requireAdmin } from "@/lib/auth";
 import { checkOrigin } from "@/lib/security";
 
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
 
-  const { data, error } = await supabaseService.storage.from(bucket).upload(objectPath, bytes, {
+  const { data, error } = await getSupabaseService().storage.from(bucket).upload(objectPath, bytes, {
     contentType,
     upsert: false,
   });
