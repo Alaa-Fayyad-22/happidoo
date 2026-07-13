@@ -387,7 +387,6 @@ export default function QuoteFormClient({ products, initialSelectedSlugs }: Prop
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedProducts = useMemo(() => {

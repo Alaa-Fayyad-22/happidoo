@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -172,21 +172,24 @@ export function ProductSlider({ products }: ProductSliderProps) {
   const stepSize = isDesktop ? 3 : 1;
   const visibleCount = isDesktop ? 3 : 1;
 
+  const go = useCallback(
+    (dir: number) => {
+      if (fading) return;
+      setFading(true);
+      setTimeout(() => {
+        setStep((s) => (s + dir + count) % count);
+        setFading(false);
+      }, 300);
+    },
+    [fading, count]
+  );
+
   // Auto-advance
   useEffect(() => {
     if (count < 2) return;
     const id = setInterval(() => go(stepSize), 4000);
     return () => clearInterval(id);
-  }, [count, step, stepSize]);
-
-  function go(dir: number) {
-    if (fading) return;
-    setFading(true);
-    setTimeout(() => {
-      setStep((s) => (s + dir + count) % count);
-      setFading(false);
-    }, 300);
-  }
+  }, [count, stepSize, go]);
 
   if (!count) return null;
 
